@@ -73,6 +73,20 @@ describe('binder2', function () {
     );
   });
 
+  it('should iterate values in nested list', function (done) {
+    jsdom.env(
+      '<html><body><div id="test" data-iterate="test, i in p.tests"><i>{{i}}:{{test}},</i></div></body></html>', [],
+      function (err, window) {
+        var viewModel = binder(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
+        expect(div.children.length).toBe(3);
+        expect(div.textContent).toBe('0:lol,1:rofl,2:omg,');
+        done();
+      }
+    );
+  });
+
   it('should execute for-each function specified by data-each attribute and filter', function (done) {
     jsdom.env(
       '<html><body><div id="test" data-each="foeach" data-iterate="test in tests"><i>{{test}}</i></div></body></html>', [],
