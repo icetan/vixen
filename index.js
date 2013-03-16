@@ -197,7 +197,8 @@
               })(list[i], i);
           };
           bucket(binds, prop.split('.')[0], nodeId);
-          for (p in maps.binds) bucket(binds, p, nodeId);
+          for (p in maps.binds) if (alias.indexOf(p) === -1)
+            bucket(binds, p, nodeId);
         } else {
           // Bind node text.
           mapTextNodes(el_);
