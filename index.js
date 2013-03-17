@@ -2,7 +2,7 @@
   if (typeof module !== 'undefined')
     module.exports = obj;
   else
-    window.kitsun = obj;
+    window.vixen = obj;
 }(function() {
   var trim = Function.prototype.call.bind(String.prototype.trim);
 
