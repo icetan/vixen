@@ -20,5 +20,6 @@
   },
   "scripts": {
     "test": "node_modules/.bin/jasmine-node test/spec"
-  }
+  },
+  "files": ["index.js", "README.md", "LICENSE"]
 }
