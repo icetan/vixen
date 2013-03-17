@@ -93,67 +93,74 @@
           count = 0;
 
       function mapTextNodes(node) {
-        Array.prototype.forEach.call(node.childNodes, function(n) {
-          var m, str, nodeId, chains, el, eventName;
+        var el, eventId, renderId, str;
 
-          if (n.nodeType === node.TEXT_NODE && (str = n.nodeValue)) {
-            m = str.match(pattern);
-            if (m) {
-              chains = m.map(function(chain) {
-                return chain.slice(2, -2).split(pipe).map(trim);
+        function match(str) {
+          var m = str.match(pattern);
+          if (m) return m.map(function(chain) {
+            return chain.slice(2, -2).split(pipe).map(trim);
+          });
+        }
+        function bindRenders(chains, renderId) {
+          // Create property to render mapping
+          chains.forEach(function(chain) {
+            // TODO: Register chaining functions as binds as well.
+            bucket(binds, chain[0].split('.')[0], renderId);
+          });
+        }
+        if (node.nodeType === node.ATTRIBUTE_NODE && node.ownerElement &&
+            (str = node.value) && (chains = match(str))) {
+          el = node.ownerElement;
+          if (node.name.indexOf('on') === 0) {
+            renderId = -1; // No renderer
+            eventName = node.name.substr(2);
+            // Add event listeners
+            chains.forEach(function(chain) {
+              el.addEventListener(eventName, function(evt) {
+                return resolveProp(orig, chain[0])(evt, el.value);
               });
-              // Add event listeners
-              if (node.nodeType === node.ATTRIBUTE_NODE &&
-                  node.ownerElement) {
-                el = node.ownerElement;
-                if (node.name.indexOf('on') === 0) {
-                  nodeId = -1; // No renderer
-                  eventName = node.name.substr(2);
-                  chains.forEach(function(chain) {
-                    el.addEventListener(eventName, function(evt) {
-                      return resolveProp(orig, chain[0])(evt, el.value);
-                    });
-                  });
-                  el.removeAttributeNode(node);
-                } else {
-                  // Create rendering function for attribute.
-                  nodeId = count++;
-                  (renders[nodeId] = function(orig, clear) {
-                    var val;
-                    if (clear) return el.removeAttributeNode(node);
-                    val = strTmpl(str, orig, node);
-                    if (el.hasOwnProperty(node.name))
-                      el[node.name] = val;
-                    else
-                      el.setAttribute(node.name, val);
-                  })(undefined, true);
-                  // Bi-directional coupling.
-                  chains.forEach(function(chain) {
-                    rebinds[chain[0]] = function() {
-                      // TODO: Getting f.ex. 'value' attribute form an input
-                      // doesn't return user input value so accessing element
-                      // object properties directly, find out how to do this
-                      // more securely.
-                      return el.hasOwnProperty(node.name) ?
-                        el[node.name] : el.getAttribute(node.name);
-                    };
-                  });
-                }
-              } else {
-                // Create rendering function for element text node.
-                nodeId = count++;
-                (renders[nodeId] = function(orig, clear) {
-                  n.nodeValue = clear ? '' : strTmpl(str, orig, n);
-                })(undefined, true);
-              }
-              // Create property to render mapping
-              chains.forEach(function(chain) {
-                // TODO: Register chaining functions as binds as well.
-                bucket(binds, chain[0].split('.')[0], nodeId);
-              });
-            }
+            });
+            el.removeAttributeNode(node);
+          } else {
+            // Create rendering function for attribute.
+            renderId = count++;
+            (renders[renderId] = function(orig, clear) {
+              var val;
+              if (clear) return el.removeAttributeNode(node);
+              val = strTmpl(str, orig, node);
+              if (el.hasOwnProperty(node.name))
+                el[node.name] = val;
+              else
+                el.setAttribute(node.name, val);
+            })(undefined, true);
+            // Bi-directional coupling.
+            chains.forEach(function(chain) {
+              rebinds[chain[0]] = function() {
+                // TODO: Getting f.ex. 'value' attribute form an input
+                // doesn't return user input value so accessing element
+                // object properties directly, find out how to do this
+                // more securely.
+                return el.hasOwnProperty(node.name) ?
+                  el[node.name] : el.getAttribute(node.name);
+              };
+            });
           }
-        });
+          bindRenders(chains, renderId);
+        } else {
+          Array.prototype.forEach.call(node.childNodes, function(n) {
+            var str, renderId, chains;
+
+            if (n.nodeType === node.TEXT_NODE && (str = n.nodeValue) &&
+                (chains = match(str))) {
+              // Create rendering function for element text node.
+              renderId = count++;
+              (renders[renderId] = function(orig, clear) {
+                n.nodeValue = clear ? '' : strTmpl(str, orig, n);
+              })(undefined, true);
+              bindRenders(chains, renderId);
+            }
+          });
+        }
       }
 
       // Remove no-traverse attribute if root node
