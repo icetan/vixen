@@ -9,6 +9,6 @@
     "jsdom": "~0.5.0"
   },
   "scripts": {
-    "test": "node_modules/.bin/jasmine-node ."
+    "test": "node_modules/.bin/jasmine-node test/spec"
   }
 }

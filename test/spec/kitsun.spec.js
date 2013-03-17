@@ -1,5 +1,5 @@
 var jsdom = require('jsdom'),
-    binder = require('./');
+    binder = require('../../');
 
 function getBody(window) {
   return window.document.getElementsByTagName('body')[0];
@@ -14,7 +14,7 @@ describe('binder2', function () {
             div = window.document.getElementById('test');
         viewModel.test = 'lol'
         expect(div.textContent).toBe('lol');
-        done();
+        done&&done();
       }
     );
   });
@@ -27,7 +27,7 @@ describe('binder2', function () {
             input = window.document.getElementById('test');
         viewModel.test = 'lol'
         expect(input.value).toBe('lol');
-        done();
+        done&&done();
       }
     );
   });
@@ -40,7 +40,7 @@ describe('binder2', function () {
             div = window.document.getElementById('test');
         viewModel.test = {a:'lol', b:'rofl'};
         expect(div.textContent).toBe('lol and rofl');
-        done();
+        done&&done();
       }
     );
   });
@@ -54,7 +54,7 @@ describe('binder2', function () {
         viewModel.extend({tests: ['lol', 'rofl', 'omg']});
         expect(div.children.length).toBe(3);
         expect(div.textContent).toBe('lolroflomg');
-        done();
+        done&&done();
       }
     );
   });
@@ -68,7 +68,7 @@ describe('binder2', function () {
         viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
         expect(div.children.length).toBe(3);
         expect(div.textContent).toBe('a:lol,b:rofl,c:omg,');
-        done();
+        done&&done();
       }
     );
   });
@@ -82,7 +82,7 @@ describe('binder2', function () {
         viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
         expect(div.children.length).toBe(3);
         expect(div.textContent).toBe('0:lol,1:rofl,2:omg,');
-        done();
+        done&&done();
       }
     );
   });
@@ -107,7 +107,7 @@ describe('binder2', function () {
         expect(count).toBe(3);
         expect(div.children.length).toBe(2);
         expect(div.textContent).toBe('lolomg');
-        done();
+        done&&done();
       }
     );
   });
@@ -121,10 +121,10 @@ describe('binder2', function () {
             evt = window.document.createEvent("HTMLEvents"),
             count = 2;
         viewModel.handler = function () {
-          if (--count === 0) done();
+          if (--count === 0) done&&done();
         };
         viewModel.handler.extra = function () {
-          if (--count === 0) done();
+          if (--count === 0) done&&done();
         };
         evt.initEvent('click', true, true);
         div.dispatchEvent(evt);
@@ -142,7 +142,7 @@ describe('binder2', function () {
         viewModel.handler = function (e, value) {
           expect(value).toBe('lulz!');
           expect(e).toBe(evt);
-          done();
+          done&&done();
         };
         input.value = 'lulz!';
         evt.initEvent('change', true, true);
@@ -166,7 +166,7 @@ describe('binder2', function () {
           }
         });
         expect(div.textContent).toBe('10kr');
-        done();
+        done&&done();
       }
     );
   });
@@ -178,7 +178,7 @@ describe('binder2', function () {
         var viewModel = binder(getBody(window)),
             div = window.document.getElementById('test');
         expect(div.textContent).toBe('');
-        done();
+        done&&done();
       }
     );
   });
@@ -191,7 +191,7 @@ describe('binder2', function () {
             div = window.document.getElementById('test');
         viewModel.lol = 'meh';
         expect(div.textContent).toBe('{{lol}}');
-        done();
+        done&&done();
       }
     );
   });
@@ -204,7 +204,7 @@ describe('binder2', function () {
             div = window.document.getElementById('test');
         viewModel.lol = 'meh';
         expect(div.textContent).toBe('meh');
-        done();
+        done&&done();
       }
     );
   });
@@ -221,7 +221,7 @@ describe('binder2', function () {
         expect(viewModel.val).toBe('tommylol');
         viewModel.val = 'tripledouble';
         expect(input.value).toBe('tripledouble');
-        done();
+        done&&done();
       }
     );
   });
