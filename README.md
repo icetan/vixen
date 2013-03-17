@@ -1,7 +1,7 @@
 Vixen
 =====
 
-String/DOM templating with a JavaScript `object` as the interface.
+String/DOM templating hybrid developed for use with node-webkit.
 
 *Not tested in IE yet.*
 
