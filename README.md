@@ -1,5 +1,5 @@
-Kitsun
-======
+Vixen
+=====
 
 String/DOM templating with a JavaScript `object` as the interface.
 
@@ -23,9 +23,9 @@ Example usage
 ```
 
 ```javascript
-var view = kitsun(document.getElementById('view')).extend({
+var view = vixen(document.getElementById('view')).extend({
   me: {
-    name: 'Kitsun',
+    name: 'Vixen',
     likes: [ 'Trampolines', 'Mice', 'Other foxes' ]
   },
   shout: function() {
