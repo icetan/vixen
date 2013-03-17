@@ -1,16 +1,16 @@
 var jsdom = require('jsdom'),
-    binder = require('../../');
+    kitsun = require('../../');
 
 function getBody(window) {
   return window.document.getElementsByTagName('body')[0];
 }
 
-describe('binder2', function () {
+describe('kitsun', function () {
   it('should reflect view model changes in div', function (done) {
     jsdom.env(
       '<html><body><div id="test">{{test}}</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.test = 'lol'
         expect(div.textContent).toBe('lol');
@@ -23,7 +23,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><input type="text" id="test" value="{{test}}"></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             input = window.document.getElementById('test');
         viewModel.test = 'lol'
         expect(input.value).toBe('lol');
@@ -36,7 +36,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test">{{test.a}} and {{test.b}}</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.test = {a:'lol', b:'rofl'};
         expect(div.textContent).toBe('lol and rofl');
@@ -49,7 +49,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" data-iterate="test in tests"><i>{{test}}</i></div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.extend({tests: ['lol', 'rofl', 'omg']});
         expect(div.children.length).toBe(3);
@@ -63,7 +63,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" data-iterate="test, i in tests"><i>{{i}}:{{test}},</i></div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
         expect(div.children.length).toBe(3);
@@ -77,7 +77,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" data-iterate="test, i in p.tests"><i>{{i}}:{{test}},</i></div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
         expect(div.children.length).toBe(3);
@@ -91,7 +91,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" data-each="foeach" data-iterate="test in tests"><i>{{test}}</i></div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test'),
             count = 0;
         viewModel.extend({
@@ -116,7 +116,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" onclick="{{handler}} {{ handler.extra }}"></div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test'),
             evt = window.document.createEvent("HTMLEvents"),
             count = 2;
@@ -136,7 +136,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><input type=text id="test" onchange="{{handler}}"></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             input = window.document.getElementById('test'),
             evt = window.document.createEvent("HTMLEvents");
         viewModel.handler = function (e, value) {
@@ -155,7 +155,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test">{{value | format}}kr</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.extend({
           value: 10.1425,
@@ -175,7 +175,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test">{{error.message}}</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         expect(div.textContent).toBe('');
         done&&done();
@@ -187,7 +187,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><div id="test" data-subview>{{lol}}</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.lol = 'meh';
         expect(div.textContent).toBe('{{lol}}');
@@ -200,7 +200,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body data-subview><div id="test">{{lol}}</div></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.lol = 'meh';
         expect(div.textContent).toBe('meh');
@@ -213,7 +213,7 @@ describe('binder2', function () {
     jsdom.env(
       '<html><body><input id="test" value="{{val}}"></body></html>', [],
       function (err, window) {
-        var viewModel = binder(getBody(window)),
+        var viewModel = kitsun(getBody(window)),
             input = window.document.getElementById('test');
         viewModel.val = 'jimmyrofl';
         expect(input.value).toBe('jimmyrofl');
