@@ -46,11 +46,11 @@
       var toRender = {};
       Object.getOwnPropertyNames(obj).forEach(function(prop) {
         orig[prop] = obj[prop];
-        if (binds[prop]) binds[prop].forEach(function(nodeId) {
-          if (nodeId >= 0) toRender[nodeId] = true;
+        if (binds[prop]) binds[prop].forEach(function(renderId) {
+          if (renderId >= 0) toRender[renderId] = true;
         });
       });
-      for (nodeId in toRender) renders[nodeId](orig);
+      for (renderId in toRender) renders[renderId](orig);
       return proxy;
     };
 
@@ -59,8 +59,8 @@
       Object.defineProperty(proxy, prop, {
         set: function(value) {
           orig[prop] = value;
-          ids.forEach(function(nodeId) {
-            if (nodeId >= 0) renders[nodeId](orig);
+          ids.forEach(function(renderId) {
+            if (renderId >= 0) renders[renderId](orig);
           });
         },
         get: function() {
@@ -86,18 +86,18 @@
       });
     }
 
+    function match(str) {
+      var m = str.match(pattern);
+      if (m) return m.map(function(chain) {
+        return chain.slice(2, -2).split(pipe).map(trim);
+      });
+    }
+
     function traverse(el) {
       var binds = {},
           rebinds = {},
           renders = {},
           count = 0;
-
-      function match(str) {
-        var m = str.match(pattern);
-        if (m) return m.map(function(chain) {
-          return chain.slice(2, -2).split(pipe).map(trim);
-        });
-      }
 
       function bindRenders(chains, renderId) {
         // Create property to render mapping
@@ -166,7 +166,7 @@
       el.removeAttribute('data-subview');
 
       traverseElements(el, function(el_) {
-        var iterator, template, nodeId, prop, alias, each;
+        var iterator, template, renderId, prop, alias, each;
 
         // Stop handling and recursion if subview.
         if (el_.hasAttribute('data-subview')) return false;
@@ -180,8 +180,8 @@
           template.removeAttribute('data-iterate');
           each = template.getAttribute('data-each');
           maps = traverse(template.cloneNode(true));
-          nodeId = count++;
-          renders[nodeId] = function(orig) {
+          renderId = count++;
+          renders[renderId] = function(orig) {
             var list = resolveProp(orig, prop), i,
                 each_ = each && resolveProp(orig, each),
                 orig_ = extend({}, orig);
@@ -189,12 +189,12 @@
             for (i in list) if (list.hasOwnProperty(i))
               (function(value, i) {
                 var clone = template.cloneNode(true),
-                    maps, nodeId;
+                    maps, renderId;
                 maps = traverse(clone);
                 orig_[alias[0]] = value;
                 if (alias[1]) orig_[alias[1]] = i;
                 if (!each_ || each_(value, i, orig_, clone) == null) {
-                  for (nodeId in maps.renders) maps.renders[nodeId](orig_);
+                  for (renderId in maps.renders) maps.renders[renderId](orig_);
                   Array.prototype.slice.call(clone.childNodes)
                   .forEach(function(n){
                     el_.appendChild(n);
@@ -202,9 +202,9 @@
                 }
               })(list[i], i);
           };
-          bucket(binds, prop.split('.')[0], nodeId);
+          bucket(binds, prop.split('.')[0], renderId);
           for (p in maps.binds) if (alias.indexOf(p) === -1)
-            bucket(binds, p, nodeId);
+            bucket(binds, p, renderId);
         } else {
           // Bind node text.
           mapTextNodes(el_);
