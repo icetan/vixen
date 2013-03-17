@@ -128,19 +128,17 @@
               var val;
               if (clear) return el.removeAttributeNode(node);
               val = strTmpl(str, orig, node);
-              if (el.hasOwnProperty(node.name))
-                el[node.name] = val;
-              else
+              node.name in el ? el[node.name] = val :
                 el.setAttribute(node.name, val);
             })(undefined, true);
             // Bi-directional coupling.
             chains.forEach(function(chain) {
               rebinds[chain[0]] = function() {
-                // TODO: Getting f.ex. 'value' attribute form an input
+                // TODO: Getting f.ex. 'value' attribute from an input
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
                 // more securely.
-                return el.hasOwnProperty(node.name) ?
+                return node.name in el ?
                   el[node.name] : el.getAttribute(node.name);
               };
             });
