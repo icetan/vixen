@@ -92,44 +92,43 @@
           renders = {},
           count = 0;
 
-      function mapTextNodes(node) {
-        var el, eventId, renderId, str;
+      function match(str) {
+        var m = str.match(pattern);
+        if (m) return m.map(function(chain) {
+          return chain.slice(2, -2).split(pipe).map(trim);
+        });
+      }
 
-        function match(str) {
-          var m = str.match(pattern);
-          if (m) return m.map(function(chain) {
-            return chain.slice(2, -2).split(pipe).map(trim);
-          });
-        }
-        function bindRenders(chains, renderId) {
-          // Create property to render mapping
-          chains.forEach(function(chain) {
-            // TODO: Register chaining functions as binds as well.
-            bucket(binds, chain[0].split('.')[0], renderId);
-          });
-        }
-        if (node.nodeType === node.ATTRIBUTE_NODE && node.ownerElement &&
-            (str = node.value) && (chains = match(str))) {
-          el = node.ownerElement;
-          if (node.name.indexOf('on') === 0) {
+      function bindRenders(chains, renderId) {
+        // Create property to render mapping
+        chains.forEach(function(chain) {
+          // TODO: Register chaining functions as binds as well.
+          bucket(binds, chain[0].split('.')[0], renderId);
+        });
+      }
+
+      function mapAttribute(owner, attr) {
+        var eventId, renderId, str;
+        if ((str = attr.value) && (chains = match(str))) {
+          if (attr.name.indexOf('on') === 0) {
             renderId = -1; // No renderer
-            eventName = node.name.substr(2);
+            eventName = attr.name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
-              el.addEventListener(eventName, function(evt) {
-                return resolveProp(orig, chain[0])(evt, el.value);
+              owner.addEventListener(eventName, function(evt) {
+                return resolveProp(orig, chain[0])(evt, owner.value);
               });
             });
-            el.removeAttributeNode(node);
+            owner.removeAttribute(attr.name);
           } else {
             // Create rendering function for attribute.
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
               var val;
-              if (clear) return el.removeAttributeNode(node);
-              val = strTmpl(str, orig, node);
-              node.name in el ? el[node.name] = val :
-                el.setAttribute(node.name, val);
+              if (clear) return owner.removeAttribute(attr.name);
+              val = strTmpl(str, orig, attr);
+              attr.name in owner ? owner[attr.name] = val :
+                owner.setAttribute(attr.name, val);
             })(undefined, true);
             // Bi-directional coupling.
             chains.forEach(function(chain) {
@@ -138,27 +137,29 @@
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
                 // more securely.
-                return node.name in el ?
-                  el[node.name] : el.getAttribute(node.name);
+                return attr.name in owner ?
+                  owner[attr.name] : owner.getAttribute(attr.name);
               };
             });
           }
           bindRenders(chains, renderId);
-        } else {
-          Array.prototype.forEach.call(node.childNodes, function(n) {
-            var str, renderId, chains;
-
-            if (n.nodeType === node.TEXT_NODE && (str = n.nodeValue) &&
-                (chains = match(str))) {
-              // Create rendering function for element text node.
-              renderId = count++;
-              (renders[renderId] = function(orig, clear) {
-                n.nodeValue = clear ? '' : strTmpl(str, orig, n);
-              })(undefined, true);
-              bindRenders(chains, renderId);
-            }
-          });
         }
+      }
+
+      function mapTextNodes(el) {
+        Array.prototype.forEach.call(el.childNodes, function(node) {
+          var str, renderId, chains;
+
+          if (node.nodeType === el.TEXT_NODE && (str = node.nodeValue) &&
+              (chains = match(str))) {
+            // Create rendering function for element text node.
+            renderId = count++;
+            (renders[renderId] = function(orig, clear) {
+              node.nodeValue = clear ? '' : strTmpl(str, orig, node);
+            })(undefined, true);
+            bindRenders(chains, renderId);
+          }
+        });
       }
 
       // Remove no-traverse attribute if root node
@@ -209,7 +210,8 @@
           mapTextNodes(el_);
         }
         // Bind node attributes text.
-        Array.prototype.slice.call(el_.attributes).forEach(mapTextNodes);
+        Array.prototype.slice.call(el_.attributes)
+        .forEach(mapAttribute.bind(undefined, el_));
         // Stop recursion if iterator.
         return !iterator;
       });
