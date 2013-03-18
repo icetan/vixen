@@ -3,7 +3,7 @@ Vixen
 
 String/DOM templating hybrid developed for use with node-webkit.
 
-*Not tested in IE yet.*
+*Not IE6-8 compatible yet.*
 
 Example usage
 -------------
