@@ -126,8 +126,27 @@ describe('vixen', function () {
         viewModel.handler.extra = function () {
           if (--count === 0) done&&done();
         };
-        evt.initEvent('click', true, true);
-        div.dispatchEvent(evt);
+        function fire() {
+          var err;
+          evt.initEvent('click', true, true);
+          try {
+            div.dispatchEvent(evt);
+          } catch(ex) {
+            err = ex;
+          }
+          expect(err).toBeFalsy();
+        }
+        if (!done) {
+          runs(fire);
+          waitsFor(function() {
+            return count === 0;
+          }, 'Handlers should have executed', 1);
+          runs(function() {
+            expect(count).toBe(0);
+          });
+        } else {
+          fire();
+        }
       }
     );
   });
@@ -138,15 +157,35 @@ describe('vixen', function () {
       function (err, window) {
         var viewModel = vixen(getBody(window)),
             input = window.document.getElementById('test'),
-            evt = window.document.createEvent("HTMLEvents");
+            evt = window.document.createEvent("HTMLEvents"),
+            count = 1;
         viewModel.handler = function (e, value) {
           expect(value).toBe('lulz!');
           expect(e).toBe(evt);
-          done&&done();
+          if (--count === 0) done&&done();
         };
         input.value = 'lulz!';
-        evt.initEvent('change', true, true);
-        input.dispatchEvent(evt);
+        function fire() {
+          var err;
+          evt.initEvent('change', true, true);
+          try {
+            input.dispatchEvent(evt);
+          } catch(ex) {
+            err = ex;
+          }
+          expect(err).toBeFalsy();
+        }
+        if (!done) {
+          runs(fire);
+          waitsFor(function() {
+            return count === 0;
+          }, 'Handlers should have executed', 1);
+          runs(function() {
+            expect(count).toBe(0);
+          });
+        } else {
+          fire();
+        }
       }
     );
   });
@@ -159,8 +198,7 @@ describe('vixen', function () {
             div = window.document.getElementById('test');
         viewModel.extend({
           value: 10.1425,
-          format: function (value, node) {
-            expect(node.nodeType).toBe(div.TEXT_NODE);
+          format: function (value) {
             expect(value).toBe(10.1425);
             return Math.round(value);
           }
@@ -173,11 +211,24 @@ describe('vixen', function () {
 
   it('should remove all curlies', function (done) {
     jsdom.env(
-      '<html><body><div id="test">{{error.message}}</div></body></html>', [],
+      '<html><body><div id="test" class="error {{status}}"><b>Error</b>: {{message}}</div></body></html>', [],
       function (err, window) {
         var viewModel = vixen(getBody(window)),
             div = window.document.getElementById('test');
-        expect(div.textContent).toBe('');
+        expect(div.textContent).toBe('Error: ');
+        expect(div.className).toBe('error ');
+        done&&done();
+      }
+    );
+  });
+
+  it('should remove event attributes', function (done) {
+    jsdom.env(
+      '<html><body><button id="test" onclick="{{click}}">Click me!</button></body></html>', [],
+      function (err, window) {
+        var viewModel = vixen(getBody(window)),
+            button = window.document.getElementById('test');
+        expect(button.getAttribute('onclick')).toBe(null);
         done&&done();
       }
     );
