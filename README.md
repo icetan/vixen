@@ -38,4 +38,6 @@ var view = vixen(document.getElementById('view')).extend({
 });
 ```
 
+[See it in action.](http://icetan.github.com/vixen)
+
 *Not IE6-8 compatible yet.*
