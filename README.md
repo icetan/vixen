@@ -3,9 +3,9 @@
 Vixen
 =====
 
-String/DOM templating hybrid developed for use with node-webkit.
+Minimal string/DOM templating hybrid developed for use with node-webkit.
 
-*Not IE6-8 compatible yet.*
+Only ~7.3kb and ~4.4kb minified.
 
 Example usage
 -------------
@@ -37,3 +37,5 @@ var view = vixen(document.getElementById('view')).extend({
   alt: function(i) { return i%2 === 0 ? 'dark' : 'light'; }
 });
 ```
+
+*Not IE6-8 compatible yet.*
