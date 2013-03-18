@@ -1,4 +1,5 @@
 <img src="https://raw.github.com/icetan/vixen/gh-pages/logo.png">
+[![build status](https://secure.travis-ci.org/icetan/vixen.png)](http://travis-ci.org/icetan/vixen)
 
 Vixen
 =====
