@@ -1,3 +1,5 @@
+<img src="https://raw.github.com/icetan/vixen/gh-pages/logo.png">
+
 Vixen
 =====
 
@@ -17,8 +19,8 @@ Example usage
     <li class="{{i | alt}}">{{like}}</li>
   </ul>
 
-  <input value="{{message}}"/>
-  <button onclick="{{shout}}">Give me a shout</button>
+  <input value="{{message}}" placeholder="Write something…"/>
+  <button onclick="{{shout}}">and try my event handling</button>
 </div>
 ```
 
@@ -26,10 +28,10 @@ Example usage
 var view = vixen(document.getElementById('view')).extend({
   me: {
     name: 'Vixen',
-    likes: [ 'Trampolines', 'Mice', 'Other foxes' ]
+    likes: [ 'Trampolines', 'Geese', 'Washing machines', 'Other foxes' ]
   },
   shout: function() {
-    alert('I\'ll tell Kriss you said: "'+view.message+'".');
+    alert('You wrote: "'+view.message+'".');
     view.message = '';
   },
   alt: function(i) { return i%2 === 0 ? 'dark' : 'light'; }
