@@ -6,11 +6,30 @@
     <script src="./index.js" type="text/javascript"></script>
     <style>
       body {
+      }
+      ul {
+        padding: 0;
+        list-style: none;
+        font-weight: 300;
         font-family: sans-serif;
+        font-style: italic;
+        font-size: 1.2em;
+        line-height: 1.4em;
+        color: #444;
+      }
+      h1 {
+        font-family: sans-serif;
+        font-weight: 300;
+        font-size: 3em;
+      }
+      h2 {
+        font-family: sans-serif;
+        font-weight: 400;
+        font-size: 1.8em;
       }
       #main {
         margin: auto;
-        width: 600px;
+        width: 640px;
         max-width: 90%;
       }
       .light a {
@@ -19,12 +38,38 @@
       .dark a {
         color: #000;
       }
+      small {
+        font-size: 0.7em;
+      }
+      small, a {
+        color: #666;
+      }
+      pre, #view {
+        background-color: #f8f8f8;
+        border: 1px solid #ccc;
+        font-size: 13px;
+        line-height: 19px;
+        overflow: auto;
+        padding: 6px 10px;
+        border-radius: 3px;
+      }
     </style>
   </head>
   <body>
     <div id="main">
       <img src="logo.png">
-      <h1>Vixen</h1>
+      <h1>
+        Vixen
+        <small>
+          on <a href="https://github.com/icetan/vixen">GitHub</a>,
+          <a href="https://npmjs.org/package/vixen">NPM</a>
+        </small>
+      </h1>
+      <ul>
+        <li>String/DOM templating hybrid.</li>
+        <li>Minimal, only ~7.3kb and ~4.4kb minified.</li>
+        <li>Renders on both client and server side with Node.js.</li>
+      </ul>
       <h2>HTML source</h2>
       <pre id="html-source"></pre>
       <h2>JavaScript source</h2>
@@ -34,7 +79,7 @@
 <div id="view">
   <h1>I'm {{me.name}}</h1>
 
-  <h2>And I like</h2>
+  <h2>and I like</h2>
   <ul data-iterate="like,i in me.likes">
     <li class="{{i | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
   </ul>
