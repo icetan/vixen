@@ -39,33 +39,33 @@
     }
   }
 
-  function createProxy(orig, binds, rebinds, renders) {
+  function createProxy(orig, maps) {
     var proxy = {},
         prop;
     proxy.extend = function(obj) {
       var toRender = {};
       Object.keys(obj).forEach(function(prop) {
         orig[prop] = obj[prop];
-        if (binds[prop]) binds[prop].forEach(function(renderId) {
+        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
           if (renderId >= 0) toRender[renderId] = true;
         });
       });
-      for (renderId in toRender) renders[renderId](orig);
+      for (renderId in toRender) maps.renders[renderId](orig);
       return proxy;
     };
 
-    Object.keys(binds).forEach(function(prop) {
-      var ids = binds[prop];
+    Object.keys(maps.binds).forEach(function(prop) {
+      var ids = maps.binds[prop];
       Object.defineProperty(proxy, prop, {
         set: function(value) {
           orig[prop] = value;
           ids.forEach(function(renderId) {
-            if (renderId >= 0) renders[renderId](orig);
+            if (renderId >= 0) maps.renders[renderId](orig);
           });
         },
         get: function() {
-          if (rebinds[prop])
-            return rebinds[prop]();
+          if (maps.rebinds[prop])
+            return maps.rebinds[prop]();
           return orig[prop];
         }
       });
@@ -166,7 +166,7 @@
       el.removeAttribute('data-subview');
 
       traverseElements(el, function(el_) {
-        var iterator, template, renderId, prop, alias, each;
+        var i, iterator, template, renderId, prop, alias, each;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('data-subview') != null) return false;
@@ -210,14 +210,13 @@
           mapTextNodes(el_);
         }
         // Bind node attributes text.
-        for (var i = el_.attributes.length; i--;)
+        for (i = el_.attributes.length; i--;)
           mapAttribute(el_, el_.attributes[i]);
         // Stop recursion if iterator.
         return !iterator;
       });
       return {binds:binds, rebinds:rebinds, renders:renders};
     }
-    var maps = traverse(el);
-    return createProxy(orig, maps.binds, maps.rebinds, maps.renders);
+    return createProxy(orig, traverse(el));
   };
 }());
