@@ -4,7 +4,7 @@
   else
     window.vixen = obj;
 }(function() {
-  var trim = Function.prototype.call.bind(String.prototype.trim);
+  function trim(str) {return String.prototype.trim.call(str);};
 
   function resolveProp(obj, name) {
     return name.trim().split('.').reduce(function (p, prop) {
@@ -12,10 +12,10 @@
     }, obj);
   }
 
-  function resolveChain(obj, chain, node) {
+  function resolveChain(obj, chain) {
     var prop = chain.shift();
     return chain.reduce(function (p, prop) {
-      return resolveProp(obj, prop)(p, node);
+      return resolveProp(obj, prop)(p);
     }, resolveProp(obj, prop));
   }
 
@@ -25,47 +25,48 @@
   }
 
   function extend(orig, obj) {
-    Object.getOwnPropertyNames(obj).forEach(function(prop) {
+    Object.keys(obj).forEach(function(prop) {
       orig[prop] = obj[prop];
     });
     return orig;
   }
 
   function traverseElements(el, callback) {
+    var i;
     if (callback(el) !== false) {
-      Array.prototype.forEach.call(el.children, function (node) {
+      for(i = el.children.length; i--;) (function (node) {
         traverseElements(node, callback);
-      });
+      })(el.children[i]);
     }
   }
 
-  function createProxy(orig, binds, rebinds, renders) {
+  function createProxy(orig, maps) {
     var proxy = {},
         prop;
     proxy.extend = function(obj) {
       var toRender = {};
-      Object.getOwnPropertyNames(obj).forEach(function(prop) {
+      Object.keys(obj).forEach(function(prop) {
         orig[prop] = obj[prop];
-        if (binds[prop]) binds[prop].forEach(function(renderId) {
+        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
           if (renderId >= 0) toRender[renderId] = true;
         });
       });
-      for (renderId in toRender) renders[renderId](orig);
+      for (renderId in toRender) maps.renders[renderId](orig);
       return proxy;
     };
 
-    Object.getOwnPropertyNames(binds).forEach(function(prop) {
-      var ids = binds[prop];
+    Object.keys(maps.binds).forEach(function(prop) {
+      var ids = maps.binds[prop];
       Object.defineProperty(proxy, prop, {
         set: function(value) {
           orig[prop] = value;
           ids.forEach(function(renderId) {
-            if (renderId >= 0) renders[renderId](orig);
+            if (renderId >= 0) maps.renders[renderId](orig);
           });
         },
         get: function() {
-          if (rebinds[prop])
-            return rebinds[prop]();
+          if (maps.rebinds[prop])
+            return maps.rebinds[prop]();
           return orig[prop];
         }
       });
@@ -78,10 +79,10 @@
         pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
-    function strTmpl(str, orig, node) {
+    function strTmpl(str, orig) {
       return str.replace(pattern, function (prop) {
         return orig ?
-          resolveChain(orig, prop.slice(2,-2).split(pipe), node) || '' :
+          resolveChain(orig, prop.slice(2,-2).split(pipe)) || '' :
           '';
       });
     }
@@ -124,10 +125,9 @@
             // Create rendering function for attribute.
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
-              var val;
-              if (clear) return owner.removeAttribute(attr.name);
-              val = strTmpl(str, orig, attr);
-              attr.name in owner ? owner[attr.name] = val :
+              var val = strTmpl(str, orig);
+              //if (clear) return owner.setAttribute(attr.name, val);
+              !clear && attr.name in owner ? owner[attr.name] = val :
                 owner.setAttribute(attr.name, val);
             })(undefined, true);
             // Bi-directional coupling.
@@ -147,29 +147,28 @@
       }
 
       function mapTextNodes(el) {
-        Array.prototype.forEach.call(el.childNodes, function(node) {
+        for (var i = el.childNodes.length; i--;) (function(node) {
           var str, renderId, chains;
-
           if (node.nodeType === el.TEXT_NODE && (str = node.nodeValue) &&
               (chains = match(str))) {
             // Create rendering function for element text node.
             renderId = count++;
-            (renders[renderId] = function(orig, clear) {
-              node.nodeValue = clear ? '' : strTmpl(str, orig, node);
-            })(undefined, true);
+            (renders[renderId] = function(orig) {
+              node.nodeValue = strTmpl(str, orig);
+            })();
             bindRenders(chains, renderId);
           }
-        });
+        })(el.childNodes[i]);
       }
 
       // Remove no-traverse attribute if root node
       el.removeAttribute('data-subview');
 
       traverseElements(el, function(el_) {
-        var iterator, template, renderId, prop, alias, each;
+        var i, iterator, template, renderId, prop, alias, each;
 
         // Stop handling and recursion if subview.
-        if (el_.hasAttribute('data-subview')) return false;
+        if (el_.getAttribute('data-subview') != null) return false;
 
         iterator = el_.getAttribute('data-iterate');
         if (iterator) {
@@ -186,21 +185,20 @@
                 each_ = each && resolveProp(orig, each),
                 orig_ = extend({}, orig);
             el_.innerHTML = '';
-            for (i in list) if (list.hasOwnProperty(i))
-              (function(value, i) {
-                var clone = template.cloneNode(true),
-                    maps, renderId;
-                maps = traverse(clone);
-                orig_[alias[0]] = value;
-                if (alias[1]) orig_[alias[1]] = i;
-                if (!each_ || each_(value, i, orig_, clone) == null) {
-                  for (renderId in maps.renders) maps.renders[renderId](orig_);
-                  Array.prototype.slice.call(clone.childNodes)
-                  .forEach(function(n){
-                    el_.appendChild(n);
-                  });
+            for (i in list) if (list.hasOwnProperty(i)) (function(value, i) {
+              var clone = template.cloneNode(true),
+                  maps, renderId, i, node, lastNode;
+              maps = traverse(clone);
+              orig_[alias[0]] = value;
+              if (alias[1]) orig_[alias[1]] = i;
+              if (!each_ || each_(value, i, orig_, clone) == null) {
+                for (renderId in maps.renders) maps.renders[renderId](orig_);
+                for (i = clone.childNodes.length; i--; lastNode = node) {
+                  node = clone.childNodes[i];
+                  el_[lastNode?'insertBefore':'appendChild'](node, lastNode);
                 }
-              })(list[i], i);
+              }
+            })(list[i], i);
           };
           bucket(binds, prop.split('.')[0], renderId);
           for (p in maps.binds) if (alias.indexOf(p) === -1)
@@ -210,14 +208,13 @@
           mapTextNodes(el_);
         }
         // Bind node attributes text.
-        Array.prototype.slice.call(el_.attributes)
-        .forEach(mapAttribute.bind(undefined, el_));
+        for (i = el_.attributes.length; i--;)
+          mapAttribute(el_, el_.attributes[i]);
         // Stop recursion if iterator.
         return !iterator;
       });
       return {binds:binds, rebinds:rebinds, renders:renders};
     }
-    var maps = traverse(el);
-    return createProxy(orig, maps.binds, maps.rebinds, maps.renders);
+    return createProxy(orig, traverse(el));
   };
 }());
