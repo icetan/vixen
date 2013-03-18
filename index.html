@@ -2,49 +2,75 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <script src="./index.js" type="text/javascript"></script>
     <style>
       body {
-        font-family: monospace;
+        font-family: sans-serif;
       }
-      #view {
+      #main {
         margin: auto;
-        width: 300px;
+        width: 600px;
         max-width: 90%;
       }
-      .light {
+      .light a {
         color: #666;
       }
-      .dark {
+      .dark a {
         color: #000;
       }
     </style>
   </head>
   <body>
-    <div id="view">
+    <div id="main">
       <img src="logo.png">
-      <h1>I'm {{me.name}}</h1>
+      <h1>Vixen</h1>
+      <h2>HTML source</h2>
+      <pre id="html-source"></pre>
+      <h2>JavaScript source</h2>
+      <pre id="js-source"></pre>
+      <h2>Result</h2>
 
-      <h2>And I like</h2>
-      <ul data-iterate="like,i in me.likes">
-        <li class="{{i | alt}}">{{like}}</li>
-      </ul>
+<div id="view">
+  <h1>I'm {{me.name}}</h1>
 
-      <input value="{{message}}" placeholder="Write something…" />
-      <button onclick="{{shout}}">and try my event handling</button>
+  <h2>And I like</h2>
+  <ul data-iterate="like,i in me.likes">
+    <li class="{{i | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
+  </ul>
+
+  <input value="{{message}}" placeholder="Write something…" />
+  <button onclick="{{shout}}">and try my event handling</button>
+</div>
+
     </div>
+    <script>
+      var htmlSource = document.getElementById('html-source'),
+          div = document.createElement('div');
+      div.appendChild(document.getElementById('view').cloneNode(true));
+      htmlSource.textContent = div.innerHTML;
+    </script>
+
+<script id="source">
+var view = vixen(document.getElementById('view')).extend({
+  me: {
+    name: 'Vixen',
+    likes: [ {text:'Trampolines', url:'http://youtu.be/c8xJtH6UcQY'},
+             {text:'Geese', url:'http://youtu.be/zEcxyrYMpc8'},
+             {text:'Washing machines', url:'http://youtu.be/a3KCftyXcFk'},
+             {text:'Cookies', url:'http://youtu.be/KAMOmk2SQTY'} ]
+  },
+  shout: function() {
+    alert('You wrote: "'+view.message+'".');
+    view.message = '';
+  },
+  alt: function(i) { return i%2 === 0 ? 'dark' : 'light'; }
+});
+</script>
+
+    <script>
+      var jsSource = document.getElementById('js-source');
+      jsSource.textContent = document.getElementById('source').textContent.substr(1);
+    </script>
   </body>
-  <script src="./index.js" type="text/javascript"></script>
-  <script>
-    var view = vixen(document.getElementById('view')).extend({
-      me: {
-        name: 'Vixen',
-        likes: [ 'Trampolines', 'Geese', 'Washing machines', 'Other foxes' ]
-      },
-      shout: function() {
-        alert('You wrote: "'+view.message+'".');
-        view.message = '';
-      },
-      alt: function(i) { return i%2 === 0 ? 'dark' : 'light'; }
-    });
-  </script>
 </html>
