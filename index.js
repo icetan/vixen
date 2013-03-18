@@ -25,7 +25,7 @@
   }
 
   function extend(orig, obj) {
-    Object.getOwnPropertyNames(obj).forEach(function(prop) {
+    Object.keys(obj).forEach(function(prop) {
       orig[prop] = obj[prop];
     });
     return orig;
@@ -44,7 +44,7 @@
         prop;
     proxy.extend = function(obj) {
       var toRender = {};
-      Object.getOwnPropertyNames(obj).forEach(function(prop) {
+      Object.keys(obj).forEach(function(prop) {
         orig[prop] = obj[prop];
         if (binds[prop]) binds[prop].forEach(function(renderId) {
           if (renderId >= 0) toRender[renderId] = true;
@@ -54,7 +54,7 @@
       return proxy;
     };
 
-    Object.getOwnPropertyNames(binds).forEach(function(prop) {
+    Object.keys(binds).forEach(function(prop) {
       var ids = binds[prop];
       Object.defineProperty(proxy, prop, {
         set: function(value) {
@@ -169,7 +169,7 @@
         var iterator, template, renderId, prop, alias, each;
 
         // Stop handling and recursion if subview.
-        if (el_.hasAttribute('data-subview')) return false;
+        if (el_.getAttribute('data-subview') != null) return false;
 
         iterator = el_.getAttribute('data-iterate');
         if (iterator) {
@@ -189,16 +189,16 @@
             for (i in list) if (list.hasOwnProperty(i))
               (function(value, i) {
                 var clone = template.cloneNode(true),
-                    maps, renderId;
+                    maps, renderId, i, node, lastNode;
                 maps = traverse(clone);
                 orig_[alias[0]] = value;
                 if (alias[1]) orig_[alias[1]] = i;
                 if (!each_ || each_(value, i, orig_, clone) == null) {
                   for (renderId in maps.renders) maps.renders[renderId](orig_);
-                  Array.prototype.slice.call(clone.childNodes)
-                  .forEach(function(n){
-                    el_.appendChild(n);
-                  });
+                  for (i = clone.childNodes.length; i--; lastNode = node) {
+                    node = clone.childNodes[i];
+                    el_[lastNode?'insertBefore':'appendChild'](node, lastNode);
+                  }
                 }
               })(list[i], i);
           };
@@ -210,8 +210,8 @@
           mapTextNodes(el_);
         }
         // Bind node attributes text.
-        Array.prototype.slice.call(el_.attributes)
-        .forEach(mapAttribute.bind(undefined, el_));
+        for (var i = el_.attributes.length; i--;)
+          mapAttribute(el_, el_.attributes[i]);
         // Stop recursion if iterator.
         return !iterator;
       });

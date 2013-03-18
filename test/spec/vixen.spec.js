@@ -61,12 +61,12 @@ describe('vixen', function () {
 
   it('should iterate object values in view model', function (done) {
     jsdom.env(
-      '<html><body><div id="test" data-iterate="test, i in tests"><i>{{i}}:{{test}},</i></div></body></html>', [],
+      '<html><body><div id="test" data-iterate="test, i in tests"><b>{{i}}</b>:<i>{{test}},</i></div></body></html>', [],
       function (err, window) {
         var viewModel = vixen(getBody(window)),
             div = window.document.getElementById('test');
         viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
-        expect(div.children.length).toBe(3);
+        expect(div.children.length).toBe(6);
         expect(div.textContent).toBe('a:lol,b:rofl,c:omg,');
         done&&done();
       }
