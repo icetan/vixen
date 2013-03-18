@@ -1,6 +1,6 @@
 {
   "name": "vixen",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "String/DOM templating hybrid developed for use with node-webkit.",
   "author": "Christopher Fredén <c.freden@gmail.com>",
   "repository": {
