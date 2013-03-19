@@ -47,13 +47,14 @@ describe('vixen', function () {
 
   it('should iterate list values in view model', function (done) {
     jsdom.env(
-      '<html><body><div id="test" data-iterate="test in tests"><i>{{test}}</i></div></body></html>', [],
+      '<html><body><for value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
       function (err, window) {
-        var viewModel = vixen(getBody(window)),
-            div = window.document.getElementById('test');
+        window.document.createElement('for');
+        var body = getBody(window),
+            viewModel = vixen(body);
         viewModel.extend({tests: ['lol', 'rofl', 'omg']});
-        expect(div.children.length).toBe(3);
-        expect(div.textContent).toBe('lolroflomg');
+        expect(body.children.length).toBe(3);
+        expect(body.textContent).toBe('lolroflomg');
         done&&done();
       }
     );
@@ -61,13 +62,13 @@ describe('vixen', function () {
 
   it('should iterate object values in view model', function (done) {
     jsdom.env(
-      '<html><body><div id="test" data-iterate="test, i in tests"><b>{{i}}</b>:<i>{{test}},</i></div></body></html>', [],
+      '<html><body><for value="test" key="i" in="tests"><b>{{i}}</b>:<i>{{test}},</i></for></body></html>', [],
       function (err, window) {
-        var viewModel = vixen(getBody(window)),
-            div = window.document.getElementById('test');
+        var body = getBody(window),
+            viewModel = vixen(body);
         viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
-        expect(div.children.length).toBe(6);
-        expect(div.textContent).toBe('a:lol,b:rofl,c:omg,');
+        expect(body.children.length).toBe(6);
+        expect(body.textContent).toBe('a:lol,b:rofl,c:omg,');
         done&&done();
       }
     );
@@ -75,13 +76,13 @@ describe('vixen', function () {
 
   it('should iterate values in nested list', function (done) {
     jsdom.env(
-      '<html><body><div id="test" data-iterate="test, i in p.tests"><i>{{i}}:{{test}},</i></div></body></html>', [],
+      '<html><body><for value="test" key="i" in="p.tests"><i>{{i}}:{{test}},</i></for></body></html>', [],
       function (err, window) {
-        var viewModel = vixen(getBody(window)),
-            div = window.document.getElementById('test');
+        var body = getBody(window),
+            viewModel = vixen(body);
         viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
-        expect(div.children.length).toBe(3);
-        expect(div.textContent).toBe('0:lol,1:rofl,2:omg,');
+        expect(body.children.length).toBe(3);
+        expect(body.textContent).toBe('0:lol,1:rofl,2:omg,');
         done&&done();
       }
     );
@@ -89,14 +90,15 @@ describe('vixen', function () {
 
   it('should execute for-each function specified by data-each attribute and filter', function (done) {
     jsdom.env(
-      '<html><body><div id="test" data-each="foeach" data-iterate="test in tests"><i>{{test}}</i></div></body></html>', [],
+      '<html><body><for each="foeach" value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
       function (err, window) {
-        var viewModel = vixen(getBody(window)),
-            div = window.document.getElementById('test'),
+        var body = getBody(window),
+            viewModel = vixen(body),
             count = 0;
         viewModel.extend({
-          foeach: function (value, i, context, el) {
-            expect(el instanceof window.HTMLElement).toBe(true);
+          foeach: function (value, i, context, els) {
+            expect(els instanceof Array).toBe(true);
+            expect(els[0] instanceof window.HTMLElement).toBe(true);
             expect(typeof value).toBe('string');
             expect(i).toBe(''+count);
             count++;
@@ -105,8 +107,44 @@ describe('vixen', function () {
           tests: ['lol', 'rofl', 'omg']
         });
         expect(count).toBe(3);
-        expect(div.children.length).toBe(2);
-        expect(div.textContent).toBe('lolomg');
+        expect(body.children.length).toBe(2);
+        expect(body.textContent).toBe('lolomg');
+        done&&done();
+      }
+    );
+  });
+
+  it('should attach each element before for-each function and remove after if filtered', function (done) {
+    jsdom.env(
+      '<html><body><for each="foeach" value="test" key="i" in="tests">{{i}}: <i>{{test}}</i></for></body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({
+          foeach: function (value, i, context, els) {
+            expect(els[0].parentNode).toBeTruthy();
+            if (value === 'rofl') return false;
+          },
+          tests: ['lol', 'rofl', 'omg']
+        });
+        expect(body.children.length).toBe(2);
+        expect(body.textContent).toBe('0: lol2: omg');
+        done&&done();
+      }
+    );
+  });
+
+  it('should iterate over new style iterator and re-iterate without traces', function (done) {
+    jsdom.env(
+      '<html><body>before<for value="val" key="i" in="stuff">{{i}}:<i>{{val}}</i>,</for>after</body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body).extend({
+              stuff: [3,5,1,2]
+            });
+        expect(body.textContent).toBe('before0:3,1:5,2:1,3:2,after');
+        viewModel.stuff = {z:8,x:'yo',y:true};
+        expect(body.textContent).toBe('beforez:8,x:yo,y:true,after');
         done&&done();
       }
     );
