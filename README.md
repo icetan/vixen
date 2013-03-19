@@ -16,8 +16,10 @@ Example usage
   <h1>I'm {{me.name}}</h1>
 
   <h2>And I like</h2>
-  <ul data-iterate="like,i in me.likes">
-    <li class="{{i | alt}}">{{like}}</li>
+  <ul>
+    <for value="like" key="i" in="me.likes">
+      <li class="{{i | alt}}">{{like}}</li>
+    </for>
   </ul>
 
   <input value="{{message}}" placeholder="Write something…"/>
