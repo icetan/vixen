@@ -81,8 +81,10 @@
   <h1>I'm {{me.name}}</h1>
 
   <h2>and I like</h2>
-  <ul data-iterate="like,i in me.likes">
-    <li class="{{i | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
+  <ul>
+    <for value="like" key="i" in="me.likes">
+      <li class="{{i | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
+    </for>
   </ul>
 
   <input value="{{message}}" placeholder="Write something…" />
