@@ -40,18 +40,17 @@
     }
   }
 
-  function createProxy(orig, maps) {
-    var proxy = {},
-        prop;
+  function createProxy(maps) {
+    var proxy = {};
     proxy.extend = function(obj) {
       var toRender = {};
       Object.keys(obj).forEach(function(prop) {
-        orig[prop] = obj[prop];
+        maps.orig[prop] = obj[prop];
         if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
           if (renderId >= 0) toRender[renderId] = true;
         });
       });
-      for (renderId in toRender) maps.renders[renderId](orig);
+      for (renderId in toRender) maps.renders[renderId](maps.orig);
       return proxy;
     };
 
@@ -59,15 +58,15 @@
       var ids = maps.binds[prop];
       Object.defineProperty(proxy, prop, {
         set: function(value) {
-          orig[prop] = value;
+          maps.orig[prop] = value;
           ids.forEach(function(renderId) {
-            if (renderId >= 0) maps.renders[renderId](orig);
+            if (renderId >= 0) maps.renders[renderId](maps.orig);
           });
         },
         get: function() {
           if (maps.rebinds[prop])
             return maps.rebinds[prop]();
-          return orig[prop];
+          return maps.orig[prop];
         }
       });
     });
@@ -75,8 +74,7 @@
   }
 
   return function(el) {
-    var orig = {},
-        pattern = /\{\{.+?\}\}/g,
+    var pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
     function strTmpl(str, orig) {
@@ -94,8 +92,9 @@
       });
     }
 
-    function traverse(el) {
-      var binds = {},
+    function traverse(el, orig) {
+      var orig = orig || {},
+          binds = {},
           rebinds = {},
           renders = {},
           count = 0;
@@ -202,32 +201,33 @@
           renderId = count++;
           renders[renderId] = function(orig) {
             var list = resolveProp(orig, iter.prop),
-                each_ = iter.each && resolveProp(orig, iter.each),
-                orig_ = extend({}, orig), i;
+                each_ = iter.each && resolveProp(orig, iter.each), i;
             for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
             nodes = [];
-            for (i in list) if (list.hasOwnProperty(i)) (function(value, i) {
-              var clone = template.cloneNode(true),
-                  lastNode = iter.marker,
-                  maps, renderId, i_, node, nodes_ = [];
-              maps = traverse(clone);
-              orig_[iter.alias] = value;
-              if (iter.key) orig_[iter.key] = i;
-              for (renderId in maps.renders) maps.renders[renderId](orig_);
-              for (i_ = clone.childNodes.length; i_--; lastNode = node) {
-                nodes_.push(node = clone.childNodes[i_]);
-                iter.parent.insertBefore(node, lastNode);
-              }
-              if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
-                return n.nodeType === el_.ELEMENT_NODE;
-              })) != null) {
-                for (i_ = nodes_.length; i_--;)
-                  iter.parent.removeChild(nodes_[i_]);
-              } else {
-                nodes = nodes.concat(nodes_);
-              }
-            })(list[i], i);
-          };
+            for (i in list) if (list.hasOwnProperty(i))
+              (function(value, i){
+                var orig_ = extend({}, orig),
+                    clone = template.cloneNode(true),
+                    lastNode = iter.marker,
+                    maps, renderId, i_, node, nodes_ = [];
+                maps = traverse(clone, orig_);
+                orig_[iter.alias] = value;
+                if (iter.key) orig_[iter.key] = i;
+                for (renderId in maps.renders) maps.renders[renderId](orig_);
+                for (i_ = clone.childNodes.length; i_--; lastNode = node) {
+                  nodes_.push(node = clone.childNodes[i_]);
+                  iter.parent.insertBefore(node, lastNode);
+                }
+                if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
+                  return n.nodeType === el_.ELEMENT_NODE;
+                })) != null) {
+                  for (i_ = nodes_.length; i_--;)
+                    iter.parent.removeChild(nodes_[i_]);
+                } else {
+                  nodes = nodes.concat(nodes_);
+                }
+              })(list[i], i);
+            };
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
@@ -241,8 +241,8 @@
         // Stop recursion if iterator.
         return !iter;
       });
-      return {binds:binds, rebinds:rebinds, renders:renders};
+      return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
-    return createProxy(orig, traverse(el));
+    return createProxy(traverse(el));
   };
 }());

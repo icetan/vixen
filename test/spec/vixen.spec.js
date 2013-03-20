@@ -195,6 +195,61 @@ describe('vixen', function () {
     );
   });
 
+  it('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function (done) {
+    jsdom.env(
+      '<html><body><for value="thing" key="i" in="stuff">{{i}}:<i id="thing-{{i}}" onclick="{{thing.on}}">{{thing.id}}</i>,</for></body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            evt = window.document.createEvent("HTMLEvents"),
+            count = 1,
+            result = 1,
+            viewModel = vixen(body).extend({
+              stuff: [
+                {
+                  id: 'first',
+                  on: function() {
+                    result = 'first';
+                    if (--count === 0) done&&done();
+                  }
+                },
+                {
+                  id: 'second',
+                  on: function() {
+                    expect(false).toBe(true);
+                    if (--count === 0) done&&done();
+                  }
+                }
+              ]
+            }),
+            first = window.document.getElementById('thing-0'),
+            second = window.document.getElementById('thing-1');
+        expect(body.textContent).toBe('0:first,1:second,');
+        function fire() {
+          var err;
+          evt.initEvent('click', true, true);
+          try {
+            first.dispatchEvent(evt);
+          } catch(ex) {
+            err = ex;
+          }
+          expect(err).toBeFalsy();
+        }
+        if (!done) {
+          runs(fire);
+          waitsFor(function() {
+            return count === 0;
+          }, 'Handlers should have executed', 1);
+          runs(function() {
+            expect(result).toBe('first');
+            expect(count).toBe(0);
+          });
+        } else {
+          fire();
+        }
+      }
+    );
+  });
+
   it('should fire event handlers', function (done) {
     jsdom.env(
       '<html><body><div id="test" onclick="{{handler}} {{ handler.extra }}"></div></body></html>', [],
