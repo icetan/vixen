@@ -134,6 +134,26 @@ describe('vixen', function () {
     );
   });
 
+  it('should attach each element before for-each function and remove after if filtered with on element iterator', function (done) {
+    jsdom.env(
+      '<html><body><div id="test" data-each="foeach" data-value="test" data-key="i" data-in="tests">{{i}}: <i>{{test}}</i></div></body></html>', [],
+      function (err, window) {
+        var div = window.document.getElementById('test'),
+            viewModel = vixen(getBody(window));
+        viewModel.extend({
+          foeach: function (value, i, context, els) {
+            expect(els[0].parentNode).toBeTruthy();
+            if (value === 'rofl') return false;
+          },
+          tests: ['lol', 'rofl', 'omg']
+        });
+        expect(div.children.length).toBe(2);
+        expect(div.textContent).toBe('0: lol2: omg');
+        done&&done();
+      }
+    );
+  });
+
   it('should iterate over new style iterator and re-iterate without traces', function (done) {
     jsdom.env(
       '<html><body>before<for value="val" key="i" in="stuff">{{i}}:<i>{{val}}</i>,</for>after</body></html>', [],
@@ -145,6 +165,30 @@ describe('vixen', function () {
         expect(body.textContent).toBe('before0:3,1:5,2:1,3:2,after');
         viewModel.stuff = {z:8,x:'yo',y:true};
         expect(body.textContent).toBe('beforez:8,x:yo,y:true,after');
+        done&&done();
+      }
+    );
+  });
+
+  it('should create elements inside <select>', function (done) {
+    jsdom.env(
+      '<html><body><select id="test" data-value="val" data-key="i" data-in="stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            select = window.document.getElementById('test'),
+            viewModel = vixen(body).extend({
+              stuff: {
+                a: 'hello',
+                b: 'mushi mushi',
+                c: 'hej'
+              }
+            });
+        expect(select.children.length).toBe(3);
+        viewModel.stuff = {
+          d: 'good bye',
+          e: 'hejdå'
+        };
+        expect(select.children.length).toBe(2);
         done&&done();
       }
     );

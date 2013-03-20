@@ -108,6 +108,31 @@
         });
       }
 
+      function parseIterator(el) {
+        var marker, prefix = '', nodes = [];
+        if (parent_ = (el.parentElement || el.parentNode)) {
+          if (el.tagName === 'FOR') {
+            marker = el.ownerDocument.createTextNode('');
+            parent_.replaceChild(marker, el);
+          } else if (el.getAttribute('data-in')) {
+            prefix = 'data-';
+            parent_ = el;
+            nodes = Array.prototype.slice.call(el.childNodes);
+            marker = el.ownerDocument.createTextNode('');
+            parent_.appendChild(marker);
+          } else return;
+          return {
+            alias: el.getAttribute(prefix+'value'),
+            key: el.getAttribute(prefix+'key'),
+            prop: el.getAttribute(prefix+'in'),
+            each: el.getAttribute(prefix+'each'),
+            nodes: nodes,
+            parent: parent_,
+            marker: marker
+          };
+        }
+      }
+
       function mapAttribute(owner, attr) {
         var eventId, renderId, str;
         if ((str = attr.value) && (chains = match(str))) {
@@ -165,50 +190,46 @@
       el.removeAttribute('data-subview');
 
       traverseElements(el, function(el_) {
-        var i, iterator, template, marker, nodes,
-            renderId, prop, alias, key, each, parent;
+        var i, iter, template, nodes, renderId;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('data-subview') !== null) return false;
 
-        if (el_.tagName === 'FOR' && (parent = el_.parentNode)) {
-          alias = el_.getAttribute('value');
-          key = el_.getAttribute('key');
-          prop = el_.getAttribute('in');
-          each = el_.getAttribute('each');
-          nodes = [];
-          marker = el_.ownerDocument.createTextNode('');
-          parent.replaceChild(marker, el_);
-          maps = traverse(el_.cloneNode(true));
+        if (iter = parseIterator(el_)) {
+          nodes = iter.nodes;
+          template = el_.cloneNode(true);
+          maps = traverse(template.cloneNode(true));
           renderId = count++;
           renders[renderId] = function(orig) {
-            var list = resolveProp(orig, prop), i,
-                each_ = each && resolveProp(orig, each),
-                orig_ = extend({}, orig);
-            for (i = nodes.length; i--;) parent.removeChild(nodes[i]);
+            var list = resolveProp(orig, iter.prop),
+                each_ = iter.each && resolveProp(orig, iter.each),
+                orig_ = extend({}, orig), i;
+            for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
+            nodes = [];
             for (i in list) if (list.hasOwnProperty(i)) (function(value, i) {
-              var clone = el_.cloneNode(true),
-                  lastNode = marker,
+              var clone = template.cloneNode(true),
+                  lastNode = iter.marker,
                   maps, renderId, i_, node, nodes_ = [];
               maps = traverse(clone);
-              orig_[alias] = value;
-              if (key) orig_[key] = i;
+              orig_[iter.alias] = value;
+              if (iter.key) orig_[iter.key] = i;
               for (renderId in maps.renders) maps.renders[renderId](orig_);
               for (i_ = clone.childNodes.length; i_--; lastNode = node) {
                 nodes_.push(node = clone.childNodes[i_]);
-                parent.insertBefore(node, lastNode);
+                iter.parent.insertBefore(node, lastNode);
               }
               if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
                 return n.nodeType === el_.ELEMENT_NODE;
               })) != null) {
-                for (i_ = nodes_.length; i_--;) parent.removeChild(nodes_[i_]);
+                for (i_ = nodes_.length; i_--;)
+                  iter.parent.removeChild(nodes_[i_]);
               } else {
                 nodes = nodes.concat(nodes_);
               }
             })(list[i], i);
           };
-          bucket(binds, prop.split('.')[0], renderId);
-          for (p in maps.binds) if (alias.indexOf(p) === -1)
+          bucket(binds, iter.prop.split('.')[0], renderId);
+          for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
           // Stop recursion if iterator.
           return false;
