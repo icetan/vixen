@@ -172,7 +172,7 @@ describe('vixen', function () {
 
   it('should create elements inside <select>', function (done) {
     jsdom.env(
-      '<html><body><select id="test" data-value="val" data-key="i" data-in="stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
+      '<html><body><select id="test" value="{{sel}}" data-value="val" data-key="i" data-in="stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
       function (err, window) {
         var body = getBody(window),
             select = window.document.getElementById('test'),
@@ -189,6 +189,7 @@ describe('vixen', function () {
           e: 'hejdå'
         };
         expect(select.children.length).toBe(2);
+        expect(viewModel.sel).not.toBe(undefined);
         done&&done();
       }
     );

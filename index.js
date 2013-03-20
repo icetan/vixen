@@ -231,15 +231,15 @@
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
-          // Stop recursion if iterator.
-          return false;
         } else {
           // Bind node text.
           mapTextNodes(el_);
-          // Bind node attributes text.
-          for (i = el_.attributes.length; i--;)
-            mapAttribute(el_, el_.attributes[i]);
         }
+        // Bind node attributes if not a <for>.
+        if (el_.tagName !== 'FOR') for (i = el_.attributes.length; i--;)
+          mapAttribute(el_, el_.attributes[i]);
+        // Stop recursion if iterator.
+        return !iter;
       });
       return {binds:binds, rebinds:rebinds, renders:renders};
     }
