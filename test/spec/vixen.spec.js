@@ -414,4 +414,21 @@ describe('vixen', function () {
       }
     );
   });
+
+  it('should handle bi-directional attributes for boolean attributes', function (done) {
+    jsdom.env(
+      '<html><body><input id="test" type="checkbox" checked="{{checked}}"></body></html>', [],
+      function (err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        expect(input.checked).toBe(true);
+        viewModel.checked = false;
+        expect(input.checked).toBe(false);
+        input.click();
+        expect(input.checked).toBe(true);
+        expect(viewModel.checked).toBe(true);
+        done&&done();
+      }
+    );
+  });
 });
