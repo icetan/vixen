@@ -155,8 +155,9 @@
                 owner.setAttribute(attr.name, val);
             })(undefined, true);
             // Bi-directional coupling.
-            chains.forEach(function(chain) {
-              rebinds[chain[0]] = function() {
+            if (chains.length === 1 && str.substr(0,1) === '{' &&
+                str.substr(-1)==='}')
+              rebinds[chains[0][0]] = function() {
                 // TODO: Getting f.ex. 'value' attribute from an input
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
@@ -164,7 +165,6 @@
                 return attr.name in owner ?
                   owner[attr.name] : owner.getAttribute(attr.name);
               };
-            });
           }
           bindRenders(chains, renderId);
         }

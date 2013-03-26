@@ -431,4 +431,23 @@ describe('vixen', function () {
       }
     );
   });
+
+  it('should only add bi-directional bindings for non-templated attributes', function (done) {
+    jsdom.env(
+      '<html><body><input id="test" type="text" value="{{text}}{{moreText}}" class="large {{classes}}"></body></html>', [],
+      function (err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        expect(viewModel.text).toBeUndefined();
+        input.value = 'strunt';
+        expect(viewModel.text).toBeUndefined();
+        expect(input.className).toBe('large ');
+        expect(viewModel.classes).toBeUndefined();
+        viewModel.classes = 'valid';
+        expect(input.className).toBe('large valid');
+        expect(viewModel.classes).toBe('valid');
+        done&&done();
+      }
+    );
+  });
 });
