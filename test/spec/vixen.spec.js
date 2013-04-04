@@ -422,11 +422,16 @@ describe('vixen', function () {
         var viewModel = vixen(getBody(window)),
             input = window.document.getElementById('test');
         expect(input.checked).toBe(true);
+        expect(viewModel.checked).toBe(true);
         viewModel.checked = false;
         expect(input.checked).toBe(false);
+        expect(viewModel.checked).toBe(false);
         input.click();
         expect(input.checked).toBe(true);
         expect(viewModel.checked).toBe(true);
+        input.click();
+        expect(input.checked).toBe(false);
+        expect(viewModel.checked).toBe(false);
         done&&done();
       }
     );
@@ -446,6 +451,23 @@ describe('vixen', function () {
         viewModel.classes = 'valid';
         expect(input.className).toBe('large valid');
         expect(viewModel.classes).toBe('valid');
+        done&&done();
+      }
+    );
+  });
+
+  it('should not ignore falsy values in string templates', function (done) {
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a></body></html>', [],
+      function (err, window) {
+        var viewModel = vixen(getBody(window)),
+            link = window.document.getElementById('link');
+        viewModel.id = 0;
+        viewModel.text = false;
+        expect(link.textContent).toBe('false 0');
+        expect(link.href).toBe('http://bla/0');
+        expect(viewModel.id).toBe(0);
+        expect(viewModel.text).toBe(false);
         done&&done();
       }
     );

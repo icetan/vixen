@@ -77,12 +77,14 @@
     var pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
+    function resolve(orig, prop) {
+      if (!orig) return '';
+      var val = resolveChain(orig, prop.slice(2,-2).split(pipe));
+      return val === undefined ? '' : val;
+    }
+
     function strTmpl(str, orig) {
-      return str.replace(pattern, function (prop) {
-        return orig ?
-          resolveChain(orig, prop.slice(2,-2).split(pipe)) || '' :
-          '';
-      });
+      return str.replace(pattern, resolve.bind(undefined, orig));
     }
 
     function match(str) {
@@ -133,7 +135,7 @@
       }
 
       function mapAttribute(owner, attr) {
-        var eventId, renderId, str;
+        var eventId, renderId, str, noTmpl;
         if ((str = attr.value) && (chains = match(str))) {
           if (attr.name.indexOf('on') === 0) {
             renderId = -1; // No renderer
@@ -146,18 +148,18 @@
             });
             owner.removeAttribute(attr.name);
           } else {
+            noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
+              str.substr(-1)==='}';
             // Create rendering function for attribute.
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
-              var val = strTmpl(str, orig);
+              var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
               //if (clear) return owner.setAttribute(attr.name, val);
               !clear && attr.name in owner ? owner[attr.name] = val :
                 owner.setAttribute(attr.name, val);
             })(undefined, true);
             // Bi-directional coupling.
-            if (chains.length === 1 && str.substr(0,1) === '{' &&
-                str.substr(-1)==='}')
-              rebinds[chains[0][0]] = function() {
+            if (noTmpl) rebinds[chains[0][0]] = function() {
                 // TODO: Getting f.ex. 'value' attribute from an input
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
