@@ -422,11 +422,16 @@ describe('vixen', function () {
         var viewModel = vixen(getBody(window)),
             input = window.document.getElementById('test');
         expect(input.checked).toBe(true);
+        expect(viewModel.checked).toBe(true);
         viewModel.checked = false;
         expect(input.checked).toBe(false);
+        expect(viewModel.checked).toBe(false);
         input.click();
         expect(input.checked).toBe(true);
         expect(viewModel.checked).toBe(true);
+        input.click();
+        expect(input.checked).toBe(false);
+        expect(viewModel.checked).toBe(false);
         done&&done();
       }
     );
@@ -446,6 +451,44 @@ describe('vixen', function () {
         viewModel.classes = 'valid';
         expect(input.className).toBe('large valid');
         expect(viewModel.classes).toBe('valid');
+        done&&done();
+      }
+    );
+  });
+
+  it('should not ignore falsy values in string templates', function (done) {
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a></body></html>', [],
+      function (err, window) {
+        var viewModel = vixen(getBody(window)),
+            link = window.document.getElementById('link');
+        viewModel.id = 0;
+        viewModel.text = false;
+        expect(link.textContent).toBe('false 0');
+        expect(link.href).toBe('http://bla/0');
+        expect(viewModel.id).toBe(0);
+        expect(viewModel.text).toBe(false);
+        done&&done();
+      }
+    );
+  });
+
+  it('should be possible to pass values on construction of view model', function (done) {
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a><for value="item" in="items">{{item}}</for></body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body, {
+              id: 'lol',
+              text: 'apa',
+              items: [ 1,2,3 ]
+            }),
+            link = window.document.getElementById('link');
+        expect(link.textContent).toBe('apa lol');
+        expect(link.href).toBe('http://bla/lol');
+        expect(viewModel.id).toBe('lol');
+        expect(viewModel.text).toBe('apa');
+        expect(body.textContent).toBe('apa lol123');
         done&&done();
       }
     );

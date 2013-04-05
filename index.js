@@ -8,14 +8,15 @@
 
   function resolveProp(obj, name) {
     return name.trim().split('.').reduce(function (p, prop) {
-      return p[prop];
+      return p ? p[prop] : undefined;
     }, obj);
   }
 
   function resolveChain(obj, chain) {
     var prop = chain.shift();
     return chain.reduce(function (p, prop) {
-      return resolveProp(obj, prop)(p);
+      var f = resolveProp(obj, prop);
+      return f ? f(p) : p;
     }, resolveProp(obj, prop));
   }
 
@@ -73,16 +74,18 @@
     return proxy;
   }
 
-  return function(el) {
+  return function(el, orig) {
     var pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
+    function resolve(orig, prop) {
+      if (!orig) return '';
+      var val = resolveChain(orig, prop.slice(2,-2).split(pipe));
+      return val === undefined ? '' : val;
+    }
+
     function strTmpl(str, orig) {
-      return str.replace(pattern, function (prop) {
-        return orig ?
-          resolveChain(orig, prop.slice(2,-2).split(pipe)) || '' :
-          '';
-      });
+      return str.replace(pattern, resolve.bind(undefined, orig));
     }
 
     function match(str) {
@@ -133,7 +136,7 @@
       }
 
       function mapAttribute(owner, attr) {
-        var eventId, renderId, str;
+        var eventId, renderId, str, noTmpl;
         if ((str = attr.value) && (chains = match(str))) {
           if (attr.name.indexOf('on') === 0) {
             renderId = -1; // No renderer
@@ -146,18 +149,18 @@
             });
             owner.removeAttribute(attr.name);
           } else {
+            noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
+              str.substr(-1) === '}';
             // Create rendering function for attribute.
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
-              var val = strTmpl(str, orig);
+              var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
               //if (clear) return owner.setAttribute(attr.name, val);
               !clear && attr.name in owner ? owner[attr.name] = val :
                 owner.setAttribute(attr.name, val);
-            })(undefined, true);
+            })(orig, true);
             // Bi-directional coupling.
-            if (chains.length === 1 && str.substr(0,1) === '{' &&
-                str.substr(-1)==='}')
-              rebinds[chains[0][0]] = function() {
+            if (noTmpl) rebinds[chains[0][0]] = function() {
                 // TODO: Getting f.ex. 'value' attribute from an input
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
@@ -179,7 +182,7 @@
             renderId = count++;
             (renders[renderId] = function(orig) {
               node.nodeValue = strTmpl(str, orig);
-            })();
+            })(orig);
             bindRenders(chains, renderId);
           }
         })(el.childNodes[i]);
@@ -199,7 +202,7 @@
           template = el_.cloneNode(true);
           maps = traverse(template.cloneNode(true));
           renderId = count++;
-          renders[renderId] = function(orig) {
+          (renders[renderId] = function(orig) {
             var list = resolveProp(orig, iter.prop),
                 each_ = iter.each && resolveProp(orig, iter.each), i;
             for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
@@ -227,7 +230,7 @@
                   nodes = nodes.concat(nodes_);
                 }
               })(list[i], i);
-            };
+          })(orig);
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
@@ -243,6 +246,6 @@
       });
       return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
-    return createProxy(traverse(el));
+    return createProxy(traverse(el, orig));
   };
 }());
