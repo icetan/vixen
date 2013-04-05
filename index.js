@@ -8,14 +8,15 @@
 
   function resolveProp(obj, name) {
     return name.trim().split('.').reduce(function (p, prop) {
-      return p[prop];
+      return p ? p[prop] : undefined;
     }, obj);
   }
 
   function resolveChain(obj, chain) {
     var prop = chain.shift();
     return chain.reduce(function (p, prop) {
-      return resolveProp(obj, prop)(p);
+      var f = resolveProp(obj, prop);
+      return f ? f(p) : p;
     }, resolveProp(obj, prop));
   }
 
@@ -73,7 +74,7 @@
     return proxy;
   }
 
-  return function(el) {
+  return function(el, orig) {
     var pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
@@ -149,7 +150,7 @@
             owner.removeAttribute(attr.name);
           } else {
             noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
-              str.substr(-1)==='}';
+              str.substr(-1) === '}';
             // Create rendering function for attribute.
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
@@ -157,7 +158,7 @@
               //if (clear) return owner.setAttribute(attr.name, val);
               !clear && attr.name in owner ? owner[attr.name] = val :
                 owner.setAttribute(attr.name, val);
-            })(undefined, true);
+            })(orig, true);
             // Bi-directional coupling.
             if (noTmpl) rebinds[chains[0][0]] = function() {
                 // TODO: Getting f.ex. 'value' attribute from an input
@@ -181,7 +182,7 @@
             renderId = count++;
             (renders[renderId] = function(orig) {
               node.nodeValue = strTmpl(str, orig);
-            })();
+            })(orig);
             bindRenders(chains, renderId);
           }
         })(el.childNodes[i]);
@@ -201,7 +202,7 @@
           template = el_.cloneNode(true);
           maps = traverse(template.cloneNode(true));
           renderId = count++;
-          renders[renderId] = function(orig) {
+          (renders[renderId] = function(orig) {
             var list = resolveProp(orig, iter.prop),
                 each_ = iter.each && resolveProp(orig, iter.each), i;
             for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
@@ -229,7 +230,7 @@
                   nodes = nodes.concat(nodes_);
                 }
               })(list[i], i);
-            };
+          })(orig);
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
@@ -245,6 +246,6 @@
       });
       return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
-    return createProxy(traverse(el));
+    return createProxy(traverse(el, orig));
   };
 }());
