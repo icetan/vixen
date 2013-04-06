@@ -6,8 +6,6 @@ function getBody(window) {
 
 module.exports = function(test, jsdom) {
   test('vixen', function(t) {
-    t.ok(true);
-    t.equal(1,1);
     t.test('should reflect view model changes in div', function(t) {
       t.plan(1);
       jsdom.env(
@@ -265,7 +263,7 @@ module.exports = function(test, jsdom) {
               evt = window.document.createEvent("HTMLEvents");
           viewModel.handler = function(e, value) {
             t.equal(value, 'lulz!');
-            t.equal(e, evt);
+            t.deepEqual(e, evt);
           };
           input.value = 'lulz!';
           t.doesNotThrow(function() {
