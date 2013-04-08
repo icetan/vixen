@@ -1,5 +1,5 @@
 <img src="https://raw.github.com/icetan/vixen/gh-pages/logo.png">
-[![build status](https://secure.travis-ci.org/icetan/vixen.png)](http://travis-ci.org/icetan/vixen)
+[![NodeJS build status](https://secure.travis-ci.org/icetan/vixen.png)](http://travis-ci.org/icetan/vixen)
 
 Vixen
 =====
@@ -43,4 +43,4 @@ var view = vixen(document.getElementById('view')).extend({
 
 [See it in action.](http://icetan.github.com/vixen)
 
-*Not IE6-8 compatible yet.*
+[![browser build status](https://ci.testling.com/icetan/vixen.png)](https://ci.testling.com/icetan/vixen)
