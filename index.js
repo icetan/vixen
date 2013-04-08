@@ -213,10 +213,9 @@
                     clone = template.cloneNode(true),
                     lastNode = iter.marker,
                     maps, renderId, i_, node, nodes_ = [];
-                maps = traverse(clone, orig_);
-                orig_[iter.alias] = value;
                 if (iter.key) orig_[iter.key] = i;
-                for (renderId in maps.renders) maps.renders[renderId](orig_);
+                orig_[iter.alias] = value;
+                maps = traverse(clone, orig_);
                 for (i_ = clone.childNodes.length; i_--; lastNode = node) {
                   nodes_.push(node = clone.childNodes[i_]);
                   iter.parent.insertBefore(node, lastNode);

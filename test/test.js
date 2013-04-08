@@ -440,6 +440,26 @@ module.exports = function(test, jsdom) {
         }
       );
     });
+
+    t.test('should not call chaining functions with empty values or unnecessarily in iterators', function(t) {
+      t.plan(2 + 3);
+      jsdom.env(
+        '<html><body><for value="thing" key="i" in="stuff"><div class="{{i | alt}}">{{thing}}</div></for></body></html>', [],
+        function(err, window) {
+          var body = getBody(window),
+              viewModel = vixen(body, {
+                alt: function(i) {
+                  t.notOk(isNaN(i));
+                  return i % 2 === 0 ? 'even' : 'odd';
+                },
+                stuff: [ 'first', 'second' ]
+              });
+          t.equal(body.textContent, 'firstsecond');
+          t.equal(body.children[0].className, 'even');
+          t.equal(body.children[1].className, 'odd');
+        }
+      );
+    });
     t.end();
   });
 };
