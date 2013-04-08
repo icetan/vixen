@@ -4,19 +4,39 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Test Runner</title>
+    <style>
+      .✓ {
+        color: green;
+      }
+      .✗ {
+        color: red;
+      }
+    </style>
   </head>
 
   <body>
-    <ul id="result"></ul>
+    <span id="result"></span>
+    <pre id="output"></pre>
   </body>
 
   <script>
-    var resultElement = document.getElementById('result');
+    var resultElement = document.getElementById('result'),
+        outputElement = document.getElementById('output');
     if (typeof console === 'undefined') console = {};
     console.log = function(text) {
-      var li = document.createElement('li');
-      li.textContent = text;
-      result.appendChild(li);
+      var stat = text.indexOf('ok') === 0
+            ? '✓ '
+            : text.indexOf('not ok') === 0
+              ? '✗ '
+              : '',
+          statEl;
+      if (stat) {
+        statEl = document.createElement('span');
+        statEl.className = stat;
+        statEl.textContent = stat;
+        resultElement.appendChild(statEl);
+      }
+      outputElement.appendChild(document.createTextNode(text + '\n'));
     };
   </script>
   <script type="text/javascript" src="script.js"></script>
