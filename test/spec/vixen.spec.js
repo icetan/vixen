@@ -472,4 +472,25 @@ describe('vixen', function () {
       }
     );
   });
+
+  it('should be possible to pass values on construction of view model', function (done) {
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a><for value="item" in="items">{{item}}</for></body></html>', [],
+      function (err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body, {
+              id: 'lol',
+              text: 'apa',
+              items: [ 1,2,3 ]
+            }),
+            link = window.document.getElementById('link');
+        expect(link.textContent).toBe('apa lol');
+        expect(link.href).toBe('http://bla/lol');
+        expect(viewModel.id).toBe('lol');
+        expect(viewModel.text).toBe('apa');
+        expect(body.textContent).toBe('apa lol123');
+        done&&done();
+      }
+    );
+  });
 });
