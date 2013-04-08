@@ -17,7 +17,8 @@
   "devDependencies": {
     "tap": "~0.4.1",
     "tape": "~0.3.3",
-    "jsdom": "~0.5.0"
+    "jsdom": "~0.5.0",
+    "browserify": "*"
   },
   "scripts": {
     "test": "node_modules/.bin/tap test/node.js"
