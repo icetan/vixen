@@ -1,4 +1,4 @@
-;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 var test = require('./test'),
     tape = require('tape');
 
@@ -454,6 +454,26 @@ module.exports = function(test, jsdom) {
         }
       );
     });
+
+    t.test('should not call chaining functions with empty values or unnecessarily in iterators', function(t) {
+      t.plan(2 + 3);
+      jsdom.env(
+        '<html><body><for value="thing" key="i" in="stuff"><div class="{{i | alt}}">{{thing}}</div></for></body></html>', [],
+        function(err, window) {
+          var body = getBody(window),
+              viewModel = vixen(body, {
+                alt: function(i) {
+                  t.notOk(isNaN(i));
+                  return i % 2 === 0 ? 'even' : 'odd';
+                },
+                stuff: [ 'first', 'second' ]
+              });
+          t.equal(body.textContent, 'firstsecond');
+          t.equal(body.children[0].className, 'even');
+          t.equal(body.children[1].className, 'odd');
+        }
+      );
+    });
     t.end();
   });
 };
@@ -895,10 +915,9 @@ function map (xs, f) {
                     clone = template.cloneNode(true),
                     lastNode = iter.marker,
                     maps, renderId, i_, node, nodes_ = [];
-                maps = traverse(clone, orig_);
-                orig_[iter.alias] = value;
                 if (iter.key) orig_[iter.key] = i;
-                for (renderId in maps.renders) maps.renders[renderId](orig_);
+                orig_[iter.alias] = value;
+                maps = traverse(clone, orig_);
                 for (i_ = clone.childNodes.length; i_--; lastNode = node) {
                   nodes_.push(node = clone.childNodes[i_]);
                   iter.parent.insertBefore(node, lastNode);
