@@ -459,4 +459,20 @@ module.exports = function(test, jsdom) {
     );
     t.plan(2 + 3);
   });
+
+  test('object used in second argument is same as proxy object', function(t) {
+    jsdom.env(
+      '<html><body>{{a}}</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { a: 1 },
+            viewModel = vixen(body, model);
+        t.ok(model === viewModel);
+        t.equal(body.textContent, '1');
+        model.a = 2;
+        t.equal(body.textContent, '2');
+      }
+    );
+    t.plan(3);
+  });
 };
