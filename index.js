@@ -190,7 +190,7 @@
 
       // Remove no-traverse attribute if root node
       el.removeAttribute('data-subview');
-require('fs');
+
       traverseElements(el, function(el_) {
         var i, iter, template, nodes, renderId;
 
