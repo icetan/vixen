@@ -684,7 +684,7 @@ module.exports = function(test, jsdom) {
 
       // Remove no-traverse attribute if root node
       el.removeAttribute('data-subview');
-require('fs');
+
       traverseElements(el, function(el_) {
         var i, iter, template, nodes, renderId;
 
@@ -743,7 +743,7 @@ require('fs');
   };
 }());
 
-},{"fs":5}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -964,10 +964,7 @@ function map (xs, f) {
 // vim: set softtabstop=4 shiftwidth=4:
 
 })(require("__browserify_process"))
-},{"./lib/default_stream":7,"./lib/render":8,"./lib/test":9,"__browserify_process":6}],5:[function(require,module,exports){
-// nothing to see here... no file methods for the browser
-
-},{}],7:[function(require,module,exports){
+},{"./lib/default_stream":6,"./lib/render":7,"./lib/test":8,"__browserify_process":5}],6:[function(require,module,exports){
 var Stream = require('stream');
 
 module.exports = function () {
@@ -999,7 +996,7 @@ module.exports = function () {
     return out;
 };
 
-},{"stream":10}],10:[function(require,module,exports){
+},{"stream":9}],9:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -1120,7 +1117,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":12}],11:[function(require,module,exports){
+},{"events":10,"util":11}],10:[function(require,module,exports){
 (function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
@@ -1306,7 +1303,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":6}],13:[function(require,module,exports){
+},{"__browserify_process":5}],12:[function(require,module,exports){
 (function(process){function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
@@ -1484,7 +1481,7 @@ exports.relative = function(from, to) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":6}],12:[function(require,module,exports){
+},{"__browserify_process":5}],11:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -1837,7 +1834,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":11}],8:[function(require,module,exports){
+},{"events":10}],7:[function(require,module,exports){
 var Stream = require('stream');
 var json = typeof JSON === 'object' ? JSON : require('jsonify');
 
@@ -1964,7 +1961,7 @@ function getSerialize() {
     }
 }
 
-},{"stream":10,"jsonify":14}],9:[function(require,module,exports){
+},{"stream":9,"jsonify":13}],8:[function(require,module,exports){
 (function(process,__dirname){var EventEmitter = require('events').EventEmitter;
 var deepEqual = require('deep-equal');
 var defined = require('defined');
@@ -2314,7 +2311,7 @@ Test.prototype.doesNotThrow = function (fn, expected, msg, extra) {
 // vim: set softtabstop=4 shiftwidth=4:
 
 })(require("__browserify_process"),"/../node_modules/tape/lib")
-},{"events":11,"path":13,"deep-equal":15,"defined":16,"__browserify_process":6}],15:[function(require,module,exports){
+},{"events":10,"path":12,"deep-equal":14,"defined":15,"__browserify_process":5}],14:[function(require,module,exports){
 var pSlice = Array.prototype.slice;
 var Object_keys = typeof Object.keys === 'function'
     ? Object.keys
@@ -2400,18 +2397,18 @@ function objEquiv(a, b) {
   return true;
 }
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 module.exports = function () {
     for (var i = 0; i < arguments.length; i++) {
         if (arguments[i] !== undefined) return arguments[i];
     }
 };
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 exports.parse = require('./lib/parse');
 exports.stringify = require('./lib/stringify');
 
-},{"./lib/parse":17,"./lib/stringify":18}],17:[function(require,module,exports){
+},{"./lib/parse":16,"./lib/stringify":17}],16:[function(require,module,exports){
 var at, // The index of the current character
     ch, // The current character
     escapee = {
@@ -2686,7 +2683,7 @@ module.exports = function (source, reviver) {
     }({'': result}, '')) : result;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
     escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
     gap,
