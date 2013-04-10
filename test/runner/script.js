@@ -19,466 +19,731 @@ function getBody(window) {
 }
 
 module.exports = function(test, jsdom) {
-  test('vixen', function(t) {
-    t.test('should reflect view model changes in div', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body><div id="test">{{test}}</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          viewModel.test = 'lol'
-          t.equal(div.textContent, 'lol');
-        }
-      );
-    });
+  test('should reflect view model changes in div', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body><div id="test">{{test}}</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.test = 'lol'
+        t.equal(div.textContent, 'lol');
+      }
+    );
+  });
 
-    t.test('should reflect view model changes in attribute', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body><input type="text" id="test" value="{{test}}"></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              input = window.document.getElementById('test');
-          viewModel.test = 'lol'
-          t.equal(input.value, 'lol');
-        }
-      );
-    });
+  test('should reflect view model changes in attribute', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body><input type="text" id="test" value="{{test}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        viewModel.test = 'lol'
+        t.equal(input.value, 'lol');
+      }
+    );
+  });
 
-    t.test('should render nested values in view model', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body><div id="test">{{test.a}} and {{test.b}}</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          viewModel.test = {a:'lol', b:'rofl'};
-          t.equal(div.textContent, 'lol and rofl');
-        }
-      );
-    });
+  test('should render nested values in view model', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body><div id="test">{{test.a}} and {{test.b}}</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.test = {a:'lol', b:'rofl'};
+        t.equal(div.textContent, 'lol and rofl');
+      }
+    );
+  });
 
-    t.test('should iterate list values in view model', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body><for value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
-        function(err, window) {
-          window.document.createElement('for');
-          var body = getBody(window),
-              viewModel = vixen(body);
-          viewModel.extend({tests: ['lol', 'rofl', 'omg']});
-          t.equal(body.children.length, 3);
-          t.equal(body.textContent, 'lolroflomg');
-        }
-      );
-    });
+  test('should iterate list values in view model', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><for value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
+      function(err, window) {
+        window.document.createElement('for');
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({tests: ['lol', 'rofl', 'omg']});
+        t.equal(body.children.length, 3);
+        t.equal(body.textContent, 'lolroflomg');
+      }
+    );
+  });
 
-    t.test('should iterate object values in view model', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body><for value="test" key="i" in="tests"><b>{{i}}</b>:<i>{{test}},</i></for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body);
-          viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
-          t.equal(body.children.length, 6);
-          t.equal(body.textContent, 'a:lol,b:rofl,c:omg,');
-        }
-      );
-    });
+  test('should iterate object values in view model', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><for value="test" key="i" in="tests"><b>{{i}}</b>:<i>{{test}},</i></for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
+        t.equal(body.children.length, 6);
+        t.equal(body.textContent, 'a:lol,b:rofl,c:omg,');
+      }
+    );
+  });
 
-    t.test('should iterate values in nested list', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body><for value="test" key="i" in="p.tests"><i>{{i}}:{{test}},</i></for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body);
-          viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
-          t.equal(body.children.length, 3);
-          t.equal(body.textContent, '0:lol,1:rofl,2:omg,');
-        }
-      );
-    });
+  test('should iterate values in nested list', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><for value="test" key="i" in="p.tests"><i>{{i}}:{{test}},</i></for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({p: {tests: ['lol', 'rofl', 'omg']}});
+        t.equal(body.children.length, 3);
+        t.equal(body.textContent, '0:lol,1:rofl,2:omg,');
+      }
+    );
+  });
 
-    t.test('should execute for-each function specified by data-each attribute and filter', function(t) {
-      t.plan(4*3 + 2);
-      jsdom.env(
-        '<html><body><for each="foeach" value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body),
-              count = 0;
-          viewModel.extend({
-            foeach: function(value, i, context, els) {
-              t.ok(els instanceof Array);
-              t.ok(els[0] instanceof window.HTMLElement);
-              t.equal(typeof value, 'string');
-              t.equal(i, ''+count++);
-              if (value === 'rofl') return false;
-            },
-            tests: ['lol', 'rofl', 'omg']
-          });
-          t.equal(body.children.length, 2);
-          t.equal(body.textContent, 'lolomg');
-        }
-      );
-    });
+  test('should execute for-each function specified by data-each attribute and filter', function(t) {
+    t.plan(4*3 + 2);
+    jsdom.env(
+      '<html><body><for each="foeach" value="test" in="tests"><i>{{test}}</i></for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body),
+            count = 0;
+        viewModel.extend({
+          foeach: function(value, i, context, els) {
+            t.ok(els instanceof Array);
+            t.ok(els[0] instanceof window.HTMLElement);
+            t.equal(typeof value, 'string');
+            t.equal(i, ''+count++);
+            if (value === 'rofl') return false;
+          },
+          tests: ['lol', 'rofl', 'omg']
+        });
+        t.equal(body.children.length, 2);
+        t.equal(body.textContent, 'lolomg');
+      }
+    );
+  });
 
-    t.test('should attach each element before for-each function and remove after if filtered', function(t) {
-      t.plan(1*3 + 2);
-      jsdom.env(
-        '<html><body><for each="foeach" value="test" key="i" in="tests">{{i}}: <i>{{test}}</i></for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body);
-          viewModel.extend({
-            foeach: function(value, i, context, els) {
-              t.ok(els[0].parentNode);
-              if (value === 'rofl') return false;
-            },
-            tests: ['lol', 'rofl', 'omg']
-          });
-          t.equal(body.children.length, 2);
-          t.equal(body.textContent, '0: lol2: omg');
-        }
-      );
-    });
+  test('should attach each element before for-each function and remove after if filtered', function(t) {
+    t.plan(1*3 + 2);
+    jsdom.env(
+      '<html><body><for each="foeach" value="test" key="i" in="tests">{{i}}: <i>{{test}}</i></for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({
+          foeach: function(value, i, context, els) {
+            t.ok(els[0].parentNode);
+            if (value === 'rofl') return false;
+          },
+          tests: ['lol', 'rofl', 'omg']
+        });
+        t.equal(body.children.length, 2);
+        t.equal(body.textContent, '0: lol2: omg');
+      }
+    );
+  });
 
-    t.test('should attach each element before for-each function and remove after if filtered with on element iterator', function(t) {
-      t.plan(1*3 + 2);
-      jsdom.env(
-        '<html><body><div id="test" data-each="foeach" data-value="test" data-key="i" data-in="tests">{{i}}: <i>{{test}}</i></div></body></html>', [],
-        function(err, window) {
-          var div = window.document.getElementById('test'),
-              viewModel = vixen(getBody(window));
-          viewModel.extend({
-            foeach: function(value, i, context, els) {
-              t.ok(els[0].parentNode);
-              if (value === 'rofl') return false;
-            },
-            tests: ['lol', 'rofl', 'omg']
-          });
-          t.equal(div.children.length, 2);
-          t.equal(div.textContent, '0: lol2: omg');
-        }
-      );
-    });
+  test('should attach each element before for-each function and remove after if filtered with on element iterator', function(t) {
+    t.plan(1*3 + 2);
+    jsdom.env(
+      '<html><body><div id="test" data-each="foeach" data-value="test" data-key="i" data-in="tests">{{i}}: <i>{{test}}</i></div></body></html>', [],
+      function(err, window) {
+        var div = window.document.getElementById('test'),
+            viewModel = vixen(getBody(window));
+        viewModel.extend({
+          foeach: function(value, i, context, els) {
+            t.ok(els[0].parentNode);
+            if (value === 'rofl') return false;
+          },
+          tests: ['lol', 'rofl', 'omg']
+        });
+        t.equal(div.children.length, 2);
+        t.equal(div.textContent, '0: lol2: omg');
+      }
+    );
+  });
 
-    t.test('should iterate over new style iterator and re-iterate without traces', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body>before<for value="val" key="i" in="stuff">{{i}}:<i>{{val}}</i>,</for>after</body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body).extend({
-                stuff: [3,5,1,2]
-              });
-          t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,after');
-          viewModel.stuff = {z:8,x:'yo',y:true};
-          t.equal(body.textContent, 'beforez:8,x:yo,y:true,after');
-        }
-      );
-    });
+  test('should iterate over new style iterator and re-iterate without traces', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body>before<for value="val" key="i" in="stuff">{{i}}:<i>{{val}}</i>,</for>after</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body).extend({
+              stuff: [3,5,1,2]
+            });
+        t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,after');
+        viewModel.stuff = {z:8,x:'yo',y:true};
+        t.equal(body.textContent, 'beforez:8,x:yo,y:true,after');
+      }
+    );
+  });
 
-    t.test('should create elements inside <select>', function(t) {
-      t.plan(3);
-      jsdom.env(
-        '<html><body><select id="test" value="{{sel}}" data-value="val" data-key="i" data-in="stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              select = window.document.getElementById('test'),
-              viewModel = vixen(body).extend({
-                stuff: {
-                  a: 'hello',
-                  b: 'mushi mushi',
-                  c: 'hej'
-                }
-              });
-          t.equal(select.children.length, 3);
-          viewModel.stuff = {
-            d: 'good bye',
-            e: 'hejdå'
-          };
-          t.equal(select.children.length, 2);
-          t.notEqual(viewModel.sel, undefined);
-        }
-      );
-    });
+  test('should create elements inside <select>', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><select id="test" value="{{sel}}" data-value="val" data-key="i" data-in="stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            select = window.document.getElementById('test'),
+            viewModel = vixen(body).extend({
+              stuff: {
+                a: 'hello',
+                b: 'mushi mushi',
+                c: 'hej'
+              }
+            });
+        t.equal(select.children.length, 3);
+        viewModel.stuff = {
+          d: 'good bye',
+          e: 'hejdå'
+        };
+        t.equal(select.children.length, 2);
+        t.notEqual(viewModel.sel, undefined);
+      }
+    );
+  });
 
-    t.test('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function(t) {
-      t.plan(3);
-      jsdom.env(
-        '<html><body><for value="thing" key="i" in="stuff">{{i}}:<i id="thing-{{i}}" onclick="{{thing.on}}">{{thing.id}}</i>,</for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              evt = window.document.createEvent("HTMLEvents"),
-              count = 1,
-              result = 1,
-              viewModel = vixen(body).extend({
-                stuff: [
-                  {
-                    id: 'first',
-                    on: function() {
-                      t.ok(true);
-                    }
-                  },
-                  {
-                    id: 'second',
-                    on: function() {
-                      t.ok(false);
-                    }
+  test('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><for value="thing" key="i" in="stuff">{{i}}:<i id="thing-{{i}}" onclick="{{thing.on}}">{{thing.id}}</i>,</for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            evt = window.document.createEvent("HTMLEvents"),
+            count = 1,
+            result = 1,
+            viewModel = vixen(body).extend({
+              stuff: [
+                {
+                  id: 'first',
+                  on: function() {
+                    t.ok(true);
                   }
-                ]
-              }),
-              first = window.document.getElementById('thing-0'),
-              second = window.document.getElementById('thing-1');
-          t.equal(body.textContent, '0:first,1:second,');
-          t.doesNotThrow(function() {
-            var err;
-            evt.initEvent('click', true, true);
-            first.dispatchEvent(evt);
-          });
-        }
-      );
-    });
-
-    t.test('should fire event handlers', function(t) {
-      t.plan(3);
-      jsdom.env(
-        '<html><body><div id="test" onclick="{{handler}} {{ handler.extra }}"></div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test'),
-              evt = window.document.createEvent("HTMLEvents");
-          viewModel.handler = function() {
-            t.ok(true);
-          };
-          viewModel.handler.extra = function() {
-            t.ok(true);
-          };
-          t.doesNotThrow(function() {
-            var err;
-            evt.initEvent('click', true, true);
-            div.dispatchEvent(evt);
-          });
-        }
-      );
-    });
-
-    t.test('should fire event handlers and give correct value', function(t) {
-      t.plan(3);
-      jsdom.env(
-        '<html><body><input type=text id="test" onchange="{{handler}}"></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              input = window.document.getElementById('test'),
-              evt = window.document.createEvent("HTMLEvents");
-          viewModel.handler = function(e, value) {
-            t.equal(value, 'lulz!');
-            t.deepEqual(e, evt);
-          };
-          input.value = 'lulz!';
-          t.doesNotThrow(function() {
-            var err;
-            evt.initEvent('change', true, true);
-            input.dispatchEvent(evt);
-          });
-        }
-      );
-    });
-
-    t.test('should chain values through functions', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body><div id="test">{{value | format}}kr</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          viewModel.extend({
-            value: 10.1425,
-            format: function(value) {
-              t.equal(value, 10.1425);
-              return Math.round(value);
-            }
-          });
-          t.equal(div.textContent, '10kr');
-        }
-      );
-    });
-
-    t.test('should remove all curlies', function(t) {
-      t.plan(2);
-      jsdom.env(
-        '<html><body><div id="test" class="error {{status}}"><b>Error</b>: {{message}}</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          t.equal(div.textContent, 'Error: ');
-          t.equal(div.className, 'error ');
-        }
-      );
-    });
-
-    t.test('should remove event attributes', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body><button id="test" onclick="{{click}}">Click me!</button></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              button = window.document.getElementById('test');
-          t.equal(button.getAttribute('onclick'), null);
-        }
-      );
-    });
-
-    t.test('should not traverse child elements with data-subview attribute', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body><div id="test" data-subview>{{lol}}</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          viewModel.lol = 'meh';
-          t.equal(div.textContent, '{{lol}}');
-        }
-      );
-    });
-
-    t.test('should traverse root element even though it has a data-subview attribute', function(t) {
-      t.plan(1);
-      jsdom.env(
-        '<html><body data-subview><div id="test">{{lol}}</div></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              div = window.document.getElementById('test');
-          viewModel.lol = 'meh';
-          t.equal(div.textContent, 'meh');
-        }
-      );
-    });
-
-    t.test('should handle bi-directional properties for attributes', function(t) {
-      t.plan(3);
-      jsdom.env(
-        '<html><body><input id="test" value="{{val}}"></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              input = window.document.getElementById('test');
-          viewModel.val = 'jimmyrofl';
-          t.equal(input.value, 'jimmyrofl');
-          input.value = 'tommylol';
-          t.equal(viewModel.val, 'tommylol');
-          viewModel.val = 'tripledouble';
-          t.equal(input.value, 'tripledouble');
-        }
-      );
-    });
-
-    t.test('should handle bi-directional attributes for boolean attributes', function(t) {
-      t.plan(8);
-      jsdom.env(
-        '<html><body><input id="test" type="checkbox" checked="{{checked}}"></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              input = window.document.getElementById('test');
-          t.equal(input.checked, true);
-          t.equal(viewModel.checked, true);
-          viewModel.checked = false;
-          t.equal(input.checked, false);
-          t.equal(viewModel.checked, false);
-          input.click();
-          t.equal(input.checked, true);
-          t.equal(viewModel.checked, true);
-          input.click();
-          t.equal(input.checked, false);
-          t.equal(viewModel.checked, false);
-        }
-      );
-    });
-
-    t.test('should only add bi-directional bindings for non-templated attributes', function(t) {
-      t.plan(6);
-      jsdom.env(
-        '<html><body><input id="test" type="text" value="{{text}}{{moreText}}" class="large {{classes}}"></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              input = window.document.getElementById('test');
-          t.equal(viewModel.text, undefined);
-          input.value = 'strunt';
-          t.equal(viewModel.text, undefined);
-          t.equal(input.className, 'large ');
-          t.equal(viewModel.classes, undefined);
-          viewModel.classes = 'valid';
-          t.equal(input.className, 'large valid');
-          t.equal(viewModel.classes, 'valid');
-        }
-      );
-    });
-
-    t.test('should not ignore falsy values in string templates', function(t) {
-      t.plan(4);
-      jsdom.env(
-        '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a></body></html>', [],
-        function(err, window) {
-          var viewModel = vixen(getBody(window)),
-              link = window.document.getElementById('link');
-          viewModel.id = 0;
-          viewModel.text = false;
-          t.equal(link.textContent, 'false 0');
-          t.equal(link.href, 'http://bla/0');
-          t.equal(viewModel.id, 0);
-          t.equal(viewModel.text, false);
-        }
-      );
-    });
-
-    t.test('should be possible to pass values on construction of view model', function(t) {
-      t.plan(5);
-      jsdom.env(
-        '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a><for value="item" in="items">{{item}}</for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body, {
-                id: 'lol',
-                text: 'apa',
-                items: [ 1,2,3 ]
-              }),
-              link = window.document.getElementById('link');
-          t.equal(link.textContent, 'apa lol');
-          t.equal(link.href, 'http://bla/lol');
-          t.equal(viewModel.id, 'lol');
-          t.equal(viewModel.text, 'apa');
-          t.equal(body.textContent, 'apa lol123');
-        }
-      );
-    });
-
-    t.test('should not call chaining functions with empty values or unnecessarily in iterators', function(t) {
-      t.plan(2 + 3);
-      jsdom.env(
-        '<html><body><for value="thing" key="i" in="stuff"><div class="{{i | alt}}">{{thing}}</div></for></body></html>', [],
-        function(err, window) {
-          var body = getBody(window),
-              viewModel = vixen(body, {
-                alt: function(i) {
-                  t.notOk(isNaN(i));
-                  return i % 2 === 0 ? 'even' : 'odd';
                 },
-                stuff: [ 'first', 'second' ]
-              });
-          t.equal(body.textContent, 'firstsecond');
-          t.equal(body.children[0].className, 'even');
-          t.equal(body.children[1].className, 'odd');
-        }
-      );
-    });
-    t.end();
+                {
+                  id: 'second',
+                  on: function() {
+                    t.ok(false);
+                  }
+                }
+              ]
+            }),
+            first = window.document.getElementById('thing-0'),
+            second = window.document.getElementById('thing-1');
+        t.equal(body.textContent, '0:first,1:second,');
+        t.doesNotThrow(function() {
+          var err;
+          evt.initEvent('click', true, true);
+          first.dispatchEvent(evt);
+        });
+      }
+    );
+  });
+
+  test('should fire event handlers', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><div id="test" onclick="{{handler}} {{ handler.extra }}"></div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test'),
+            evt = window.document.createEvent("HTMLEvents");
+        viewModel.handler = function() {
+          t.ok(true);
+        };
+        viewModel.handler.extra = function() {
+          t.ok(true);
+        };
+        t.doesNotThrow(function() {
+          var err;
+          evt.initEvent('click', true, true);
+          div.dispatchEvent(evt);
+        });
+      }
+    );
+  });
+
+  test('should fire event handlers and give correct value', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><input type=text id="test" onchange="{{handler}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test'),
+            evt = window.document.createEvent("HTMLEvents");
+        viewModel.handler = function(e, value) {
+          t.equal(value, 'lulz!');
+          t.deepEqual(e, evt);
+        };
+        input.value = 'lulz!';
+        t.doesNotThrow(function() {
+          var err;
+          evt.initEvent('change', true, true);
+          input.dispatchEvent(evt);
+        });
+      }
+    );
+  });
+
+  test('should chain values through functions', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><div id="test">{{value | format}}kr</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.extend({
+          value: 10.1425,
+          format: function(value) {
+            t.equal(value, 10.1425);
+            return Math.round(value);
+          }
+        });
+        t.equal(div.textContent, '10kr');
+      }
+    );
+  });
+
+  test('should remove all curlies', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><div id="test" class="error {{status}}"><b>Error</b>: {{message}}</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        t.equal(div.textContent, 'Error: ');
+        t.equal(div.className, 'error ');
+      }
+    );
+  });
+
+  test('should remove event attributes', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body><button id="test" onclick="{{click}}">Click me!</button></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            button = window.document.getElementById('test');
+        t.equal(button.getAttribute('onclick'), null);
+      }
+    );
+  });
+
+  test('should not traverse child elements with data-subview attribute', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body><div id="test" data-subview>{{lol}}</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.lol = 'meh';
+        t.equal(div.textContent, '{{lol}}');
+      }
+    );
+  });
+
+  test('should traverse root element even though it has a data-subview attribute', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body data-subview><div id="test">{{lol}}</div></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            div = window.document.getElementById('test');
+        viewModel.lol = 'meh';
+        t.equal(div.textContent, 'meh');
+      }
+    );
+  });
+
+  test('should handle bi-directional properties for attributes', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><input id="test" value="{{val}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        viewModel.val = 'jimmyrofl';
+        t.equal(input.value, 'jimmyrofl');
+        input.value = 'tommylol';
+        t.equal(viewModel.val, 'tommylol');
+        viewModel.val = 'tripledouble';
+        t.equal(input.value, 'tripledouble');
+      }
+    );
+  });
+
+  test('should handle bi-directional attributes for boolean attributes', function(t) {
+    t.plan(8);
+    jsdom.env(
+      '<html><body><input id="test" type="checkbox" checked="{{checked}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        t.equal(input.checked, true);
+        t.equal(viewModel.checked, true);
+        viewModel.checked = false;
+        t.equal(input.checked, false);
+        t.equal(viewModel.checked, false);
+        input.click();
+        t.equal(input.checked, true);
+        t.equal(viewModel.checked, true);
+        input.click();
+        t.equal(input.checked, false);
+        t.equal(viewModel.checked, false);
+      }
+    );
+  });
+
+  test('should only add bi-directional bindings for non-templated attributes', function(t) {
+    t.plan(6);
+    jsdom.env(
+      '<html><body><input id="test" type="text" value="{{text}}{{moreText}}" class="large {{classes}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test');
+        t.equal(viewModel.text, undefined);
+        input.value = 'strunt';
+        t.equal(viewModel.text, undefined);
+        t.equal(input.className, 'large ');
+        t.equal(viewModel.classes, undefined);
+        viewModel.classes = 'valid';
+        t.equal(input.className, 'large valid');
+        t.equal(viewModel.classes, 'valid');
+      }
+    );
+  });
+
+  test('should not ignore falsy values in string templates', function(t) {
+    t.plan(4);
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            link = window.document.getElementById('link');
+        viewModel.id = 0;
+        viewModel.text = false;
+        t.equal(link.textContent, 'false 0');
+        t.equal(link.href, 'http://bla/0');
+        t.equal(viewModel.id, 0);
+        t.equal(viewModel.text, false);
+      }
+    );
+  });
+
+  test('should be possible to pass values on construction of view model', function(t) {
+    t.plan(5);
+    jsdom.env(
+      '<html><body><a id="link" href="http://bla/{{id}}">{{text}} {{id}}</a><for value="item" in="items">{{item}}</for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body, {
+              id: 'lol',
+              text: 'apa',
+              items: [ 1,2,3 ]
+            }),
+            link = window.document.getElementById('link');
+        t.equal(link.textContent, 'apa lol');
+        t.equal(link.href, 'http://bla/lol');
+        t.equal(viewModel.id, 'lol');
+        t.equal(viewModel.text, 'apa');
+        t.equal(body.textContent, 'apa lol123');
+      }
+    );
+  });
+
+  test('should not call chaining functions with empty values or unnecessarily in iterators', function(t) {
+    t.plan(2 + 3);
+    jsdom.env(
+      '<html><body><for value="thing" key="i" in="stuff"><div class="{{i | alt}}">{{thing}}</div></for></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body, {
+              alt: function(i) {
+                t.notOk(isNaN(i));
+                return i % 2 === 0 ? 'even' : 'odd';
+              },
+              stuff: [ 'first', 'second' ]
+            });
+        t.equal(body.textContent, 'firstsecond');
+        t.equal(body.children[0].className, 'even');
+        t.equal(body.children[1].className, 'odd');
+      }
+    );
+  });
+
+  test('object used in second argument is same as proxy object', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body>{{a}}</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { a: 1 },
+            viewModel = vixen(body, model);
+        t.ok(model === viewModel);
+        t.equal(body.textContent, '1');
+        model.a = 2;
+        t.equal(body.textContent, '2');
+      }
+    );
   });
 };
 
-},{"../":4}],5:[function(require,module,exports){
+},{"../":4}],4:[function(require,module,exports){
+!function(obj) {
+  if (typeof module !== 'undefined')
+    module.exports = obj;
+  else
+    window.vixen = obj;
+}(function() {
+  function trim(str) {return String.prototype.trim.call(str);};
+
+  function resolveProp(obj, name) {
+    return name.trim().split('.').reduce(function (p, prop) {
+      return p ? p[prop] : undefined;
+    }, obj);
+  }
+
+  function resolveChain(obj, chain) {
+    var prop = chain.shift();
+    return chain.reduce(function (p, prop) {
+      var f = resolveProp(obj, prop);
+      return f ? f(p) : p;
+    }, resolveProp(obj, prop));
+  }
+
+  function bucket(b, k, v) {
+    if (!(k in b)) b[k] = [];
+    if (!(v in b[k])) b[k].push(v);
+  }
+
+  function extend(orig, obj) {
+    Object.keys(obj).forEach(function(prop) {
+      orig[prop] = obj[prop];
+    });
+    return orig;
+  }
+
+  function traverseElements(el, callback) {
+    var i;
+    if (callback(el) !== false) {
+      for(i = el.children.length; i--;) (function (node) {
+        traverseElements(node, callback);
+      })(el.children[i]);
+    }
+  }
+
+  function createProxy(maps, proxy) {
+    proxy = proxy || {};
+    proxy.extend = function(obj) {
+      var toRender = {};
+      Object.keys(obj).forEach(function(prop) {
+        maps.orig[prop] = obj[prop];
+        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
+          if (renderId >= 0) toRender[renderId] = true;
+        });
+      });
+      for (renderId in toRender) maps.renders[renderId](maps.orig);
+      return proxy;
+    };
+
+    Object.keys(maps.binds).forEach(function(prop) {
+      var ids = maps.binds[prop];
+      Object.defineProperty(proxy, prop, {
+        set: function(value) {
+          maps.orig[prop] = value;
+          ids.forEach(function(renderId) {
+            if (renderId >= 0) maps.renders[renderId](maps.orig);
+          });
+        },
+        get: function() {
+          if (maps.rebinds[prop])
+            return maps.rebinds[prop]();
+          return maps.orig[prop];
+        }
+      });
+    });
+    return proxy;
+  }
+
+  return function(el, model) {
+    var pattern = /\{\{.+?\}\}/g,
+        pipe = '|';
+
+    function resolve(orig, prop) {
+      if (!orig) return '';
+      var val = resolveChain(orig, prop.slice(2,-2).split(pipe));
+      return val === undefined ? '' : val;
+    }
+
+    function strTmpl(str, orig) {
+      return str.replace(pattern, resolve.bind(undefined, orig));
+    }
+
+    function match(str) {
+      var m = str.match(pattern);
+      if (m) return m.map(function(chain) {
+        return chain.slice(2, -2).split(pipe).map(trim);
+      });
+    }
+
+    function traverse(el, orig) {
+      var binds = {},
+          rebinds = {},
+          renders = {},
+          count = 0;
+      orig = orig || {};
+
+      function bindRenders(chains, renderId) {
+        // Create property to render mapping
+        chains.forEach(function(chain) {
+          // TODO: Register chaining functions as binds as well.
+          bucket(binds, chain[0].split('.')[0], renderId);
+        });
+      }
+
+      function parseIterator(el) {
+        var marker, prefix = '', nodes = [];
+        if (parent_ = (el.parentElement || el.parentNode)) {
+          if (el.tagName === 'FOR') {
+            marker = el.ownerDocument.createTextNode('');
+            parent_.replaceChild(marker, el);
+          } else if (el.getAttribute('data-in')) {
+            prefix = 'data-';
+            parent_ = el;
+            nodes = Array.prototype.slice.call(el.childNodes);
+            marker = el.ownerDocument.createTextNode('');
+            parent_.appendChild(marker);
+          } else return;
+          return {
+            alias: el.getAttribute(prefix+'value'),
+            key: el.getAttribute(prefix+'key'),
+            prop: el.getAttribute(prefix+'in'),
+            each: el.getAttribute(prefix+'each'),
+            nodes: nodes,
+            parent: parent_,
+            marker: marker
+          };
+        }
+      }
+
+      function mapAttribute(owner, attr) {
+        var eventId, renderId, str, noTmpl;
+        if ((str = attr.value) && (chains = match(str))) {
+          if (attr.name.indexOf('on') === 0) {
+            renderId = -1; // No renderer
+            eventName = attr.name.substr(2);
+            // Add event listeners
+            chains.forEach(function(chain) {
+              owner.addEventListener(eventName, function(evt) {
+                return resolveProp(orig, chain[0])(evt, owner.value);
+              });
+            });
+            owner.removeAttribute(attr.name);
+          } else {
+            noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
+              str.substr(-1) === '}';
+            // Create rendering function for attribute.
+            renderId = count++;
+            (renders[renderId] = function(orig, clear) {
+              var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
+              //if (clear) return owner.setAttribute(attr.name, val);
+              !clear && attr.name in owner ? owner[attr.name] = val :
+                owner.setAttribute(attr.name, val);
+            })(orig, true);
+            // Bi-directional coupling.
+            if (noTmpl) rebinds[chains[0][0]] = function() {
+                // TODO: Getting f.ex. 'value' attribute from an input
+                // doesn't return user input value so accessing element
+                // object properties directly, find out how to do this
+                // more securely.
+                return attr.name in owner ?
+                  owner[attr.name] : owner.getAttribute(attr.name);
+              };
+          }
+          bindRenders(chains, renderId);
+        }
+      }
+
+      function mapTextNodes(el) {
+        for (var i = el.childNodes.length; i--;) (function(node) {
+          var str, renderId, chains;
+          if (node.nodeType === el.TEXT_NODE && (str = node.nodeValue) &&
+              (chains = match(str))) {
+            // Create rendering function for element text node.
+            renderId = count++;
+            (renders[renderId] = function(orig) {
+              node.nodeValue = strTmpl(str, orig);
+            })(orig);
+            bindRenders(chains, renderId);
+          }
+        })(el.childNodes[i]);
+      }
+
+      // Remove no-traverse attribute if root node
+      el.removeAttribute('data-subview');
+require('fs');
+      traverseElements(el, function(el_) {
+        var i, iter, template, nodes, renderId;
+
+        // Stop handling and recursion if subview.
+        if (el_.getAttribute('data-subview') !== null) return false;
+
+        if (iter = parseIterator(el_)) {
+          nodes = iter.nodes;
+          template = el_.cloneNode(true);
+          maps = traverse(template.cloneNode(true));
+          renderId = count++;
+          (renders[renderId] = function(orig) {
+            var list = resolveProp(orig, iter.prop),
+                each_ = iter.each && resolveProp(orig, iter.each), i;
+            for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
+            nodes = [];
+            for (i in list) if (list.hasOwnProperty(i))
+              (function(value, i){
+                var orig_ = extend({}, orig),
+                    clone = template.cloneNode(true),
+                    lastNode = iter.marker,
+                    maps, renderId, i_, node, nodes_ = [];
+                if (iter.key) orig_[iter.key] = i;
+                orig_[iter.alias] = value;
+                maps = traverse(clone, orig_);
+                for (i_ = clone.childNodes.length; i_--; lastNode = node) {
+                  nodes_.push(node = clone.childNodes[i_]);
+                  iter.parent.insertBefore(node, lastNode);
+                }
+                if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
+                  return n.nodeType === el_.ELEMENT_NODE;
+                })) != null) {
+                  for (i_ = nodes_.length; i_--;)
+                    iter.parent.removeChild(nodes_[i_]);
+                } else {
+                  nodes = nodes.concat(nodes_);
+                }
+              })(list[i], i);
+          })(orig);
+          bucket(binds, iter.prop.split('.')[0], renderId);
+          for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
+            bucket(binds, p, renderId);
+        } else {
+          // Bind node text.
+          mapTextNodes(el_);
+        }
+        // Bind node attributes if not a <for>.
+        if (el_.tagName !== 'FOR') for (i = el_.attributes.length; i--;)
+          mapAttribute(el_, el_.attributes[i]);
+        // Stop recursion if iterator.
+        return !iter;
+      });
+      return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
+    }
+    return createProxy(traverse(el, model && extend({}, model)), model);
+  };
+}());
+
+},{"fs":5}],6:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -699,259 +964,10 @@ function map (xs, f) {
 // vim: set softtabstop=4 shiftwidth=4:
 
 })(require("__browserify_process"))
-},{"./lib/default_stream":6,"./lib/render":7,"./lib/test":8,"__browserify_process":5}],4:[function(require,module,exports){
-!function(obj) {
-  if (typeof module !== 'undefined')
-    module.exports = obj;
-  else
-    window.vixen = obj;
-}(function() {
-  function trim(str) {return String.prototype.trim.call(str);};
+},{"./lib/default_stream":7,"./lib/render":8,"./lib/test":9,"__browserify_process":6}],5:[function(require,module,exports){
+// nothing to see here... no file methods for the browser
 
-  function resolveProp(obj, name) {
-    return name.trim().split('.').reduce(function (p, prop) {
-      return p ? p[prop] : undefined;
-    }, obj);
-  }
-
-  function resolveChain(obj, chain) {
-    var prop = chain.shift();
-    return chain.reduce(function (p, prop) {
-      var f = resolveProp(obj, prop);
-      return f ? f(p) : p;
-    }, resolveProp(obj, prop));
-  }
-
-  function bucket(b, k, v) {
-    if (!(k in b)) b[k] = [];
-    if (!(v in b[k])) b[k].push(v);
-  }
-
-  function extend(orig, obj) {
-    Object.keys(obj).forEach(function(prop) {
-      orig[prop] = obj[prop];
-    });
-    return orig;
-  }
-
-  function traverseElements(el, callback) {
-    var i;
-    if (callback(el) !== false) {
-      for(i = el.children.length; i--;) (function (node) {
-        traverseElements(node, callback);
-      })(el.children[i]);
-    }
-  }
-
-  function createProxy(maps) {
-    var proxy = {};
-    proxy.extend = function(obj) {
-      var toRender = {};
-      Object.keys(obj).forEach(function(prop) {
-        maps.orig[prop] = obj[prop];
-        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
-          if (renderId >= 0) toRender[renderId] = true;
-        });
-      });
-      for (renderId in toRender) maps.renders[renderId](maps.orig);
-      return proxy;
-    };
-
-    Object.keys(maps.binds).forEach(function(prop) {
-      var ids = maps.binds[prop];
-      Object.defineProperty(proxy, prop, {
-        set: function(value) {
-          maps.orig[prop] = value;
-          ids.forEach(function(renderId) {
-            if (renderId >= 0) maps.renders[renderId](maps.orig);
-          });
-        },
-        get: function() {
-          if (maps.rebinds[prop])
-            return maps.rebinds[prop]();
-          return maps.orig[prop];
-        }
-      });
-    });
-    return proxy;
-  }
-
-  return function(el, orig) {
-    var pattern = /\{\{.+?\}\}/g,
-        pipe = '|';
-
-    function resolve(orig, prop) {
-      if (!orig) return '';
-      var val = resolveChain(orig, prop.slice(2,-2).split(pipe));
-      return val === undefined ? '' : val;
-    }
-
-    function strTmpl(str, orig) {
-      return str.replace(pattern, resolve.bind(undefined, orig));
-    }
-
-    function match(str) {
-      var m = str.match(pattern);
-      if (m) return m.map(function(chain) {
-        return chain.slice(2, -2).split(pipe).map(trim);
-      });
-    }
-
-    function traverse(el, orig) {
-      var orig = orig || {},
-          binds = {},
-          rebinds = {},
-          renders = {},
-          count = 0;
-
-      function bindRenders(chains, renderId) {
-        // Create property to render mapping
-        chains.forEach(function(chain) {
-          // TODO: Register chaining functions as binds as well.
-          bucket(binds, chain[0].split('.')[0], renderId);
-        });
-      }
-
-      function parseIterator(el) {
-        var marker, prefix = '', nodes = [];
-        if (parent_ = (el.parentElement || el.parentNode)) {
-          if (el.tagName === 'FOR') {
-            marker = el.ownerDocument.createTextNode('');
-            parent_.replaceChild(marker, el);
-          } else if (el.getAttribute('data-in')) {
-            prefix = 'data-';
-            parent_ = el;
-            nodes = Array.prototype.slice.call(el.childNodes);
-            marker = el.ownerDocument.createTextNode('');
-            parent_.appendChild(marker);
-          } else return;
-          return {
-            alias: el.getAttribute(prefix+'value'),
-            key: el.getAttribute(prefix+'key'),
-            prop: el.getAttribute(prefix+'in'),
-            each: el.getAttribute(prefix+'each'),
-            nodes: nodes,
-            parent: parent_,
-            marker: marker
-          };
-        }
-      }
-
-      function mapAttribute(owner, attr) {
-        var eventId, renderId, str, noTmpl;
-        if ((str = attr.value) && (chains = match(str))) {
-          if (attr.name.indexOf('on') === 0) {
-            renderId = -1; // No renderer
-            eventName = attr.name.substr(2);
-            // Add event listeners
-            chains.forEach(function(chain) {
-              owner.addEventListener(eventName, function(evt) {
-                return resolveProp(orig, chain[0])(evt, owner.value);
-              });
-            });
-            owner.removeAttribute(attr.name);
-          } else {
-            noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
-              str.substr(-1) === '}';
-            // Create rendering function for attribute.
-            renderId = count++;
-            (renders[renderId] = function(orig, clear) {
-              var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
-              //if (clear) return owner.setAttribute(attr.name, val);
-              !clear && attr.name in owner ? owner[attr.name] = val :
-                owner.setAttribute(attr.name, val);
-            })(orig, true);
-            // Bi-directional coupling.
-            if (noTmpl) rebinds[chains[0][0]] = function() {
-                // TODO: Getting f.ex. 'value' attribute from an input
-                // doesn't return user input value so accessing element
-                // object properties directly, find out how to do this
-                // more securely.
-                return attr.name in owner ?
-                  owner[attr.name] : owner.getAttribute(attr.name);
-              };
-          }
-          bindRenders(chains, renderId);
-        }
-      }
-
-      function mapTextNodes(el) {
-        for (var i = el.childNodes.length; i--;) (function(node) {
-          var str, renderId, chains;
-          if (node.nodeType === el.TEXT_NODE && (str = node.nodeValue) &&
-              (chains = match(str))) {
-            // Create rendering function for element text node.
-            renderId = count++;
-            (renders[renderId] = function(orig) {
-              node.nodeValue = strTmpl(str, orig);
-            })(orig);
-            bindRenders(chains, renderId);
-          }
-        })(el.childNodes[i]);
-      }
-
-      // Remove no-traverse attribute if root node
-      el.removeAttribute('data-subview');
-
-      traverseElements(el, function(el_) {
-        var i, iter, template, nodes, renderId;
-
-        // Stop handling and recursion if subview.
-        if (el_.getAttribute('data-subview') !== null) return false;
-
-        if (iter = parseIterator(el_)) {
-          nodes = iter.nodes;
-          template = el_.cloneNode(true);
-          maps = traverse(template.cloneNode(true));
-          renderId = count++;
-          (renders[renderId] = function(orig) {
-            var list = resolveProp(orig, iter.prop),
-                each_ = iter.each && resolveProp(orig, iter.each), i;
-            for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
-            nodes = [];
-            for (i in list) if (list.hasOwnProperty(i))
-              (function(value, i){
-                var orig_ = extend({}, orig),
-                    clone = template.cloneNode(true),
-                    lastNode = iter.marker,
-                    maps, renderId, i_, node, nodes_ = [];
-                if (iter.key) orig_[iter.key] = i;
-                orig_[iter.alias] = value;
-                maps = traverse(clone, orig_);
-                for (i_ = clone.childNodes.length; i_--; lastNode = node) {
-                  nodes_.push(node = clone.childNodes[i_]);
-                  iter.parent.insertBefore(node, lastNode);
-                }
-                if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
-                  return n.nodeType === el_.ELEMENT_NODE;
-                })) != null) {
-                  for (i_ = nodes_.length; i_--;)
-                    iter.parent.removeChild(nodes_[i_]);
-                } else {
-                  nodes = nodes.concat(nodes_);
-                }
-              })(list[i], i);
-          })(orig);
-          bucket(binds, iter.prop.split('.')[0], renderId);
-          for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
-            bucket(binds, p, renderId);
-        } else {
-          // Bind node text.
-          mapTextNodes(el_);
-        }
-        // Bind node attributes if not a <for>.
-        if (el_.tagName !== 'FOR') for (i = el_.attributes.length; i--;)
-          mapAttribute(el_, el_.attributes[i]);
-        // Stop recursion if iterator.
-        return !iter;
-      });
-      return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
-    }
-    return createProxy(traverse(el, orig));
-  };
-}());
-
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var Stream = require('stream');
 
 module.exports = function () {
@@ -983,7 +999,7 @@ module.exports = function () {
     return out;
 };
 
-},{"stream":9}],9:[function(require,module,exports){
+},{"stream":10}],10:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
 
@@ -1104,7 +1120,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":10,"util":11}],10:[function(require,module,exports){
+},{"events":11,"util":12}],11:[function(require,module,exports){
 (function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
@@ -1290,7 +1306,7 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":5}],12:[function(require,module,exports){
+},{"__browserify_process":6}],13:[function(require,module,exports){
 (function(process){function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
@@ -1468,7 +1484,7 @@ exports.relative = function(from, to) {
 };
 
 })(require("__browserify_process"))
-},{"__browserify_process":5}],11:[function(require,module,exports){
+},{"__browserify_process":6}],12:[function(require,module,exports){
 var events = require('events');
 
 exports.isArray = isArray;
@@ -1821,7 +1837,7 @@ exports.format = function(f) {
   return str;
 };
 
-},{"events":10}],7:[function(require,module,exports){
+},{"events":11}],8:[function(require,module,exports){
 var Stream = require('stream');
 var json = typeof JSON === 'object' ? JSON : require('jsonify');
 
@@ -1948,7 +1964,7 @@ function getSerialize() {
     }
 }
 
-},{"stream":9,"jsonify":13}],8:[function(require,module,exports){
+},{"stream":10,"jsonify":14}],9:[function(require,module,exports){
 (function(process,__dirname){var EventEmitter = require('events').EventEmitter;
 var deepEqual = require('deep-equal');
 var defined = require('defined');
@@ -2298,7 +2314,7 @@ Test.prototype.doesNotThrow = function (fn, expected, msg, extra) {
 // vim: set softtabstop=4 shiftwidth=4:
 
 })(require("__browserify_process"),"/../node_modules/tape/lib")
-},{"events":10,"path":12,"deep-equal":14,"defined":15,"__browserify_process":5}],14:[function(require,module,exports){
+},{"events":11,"path":13,"deep-equal":15,"defined":16,"__browserify_process":6}],15:[function(require,module,exports){
 var pSlice = Array.prototype.slice;
 var Object_keys = typeof Object.keys === 'function'
     ? Object.keys
@@ -2384,18 +2400,18 @@ function objEquiv(a, b) {
   return true;
 }
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 module.exports = function () {
     for (var i = 0; i < arguments.length; i++) {
         if (arguments[i] !== undefined) return arguments[i];
     }
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 exports.parse = require('./lib/parse');
 exports.stringify = require('./lib/stringify');
 
-},{"./lib/parse":16,"./lib/stringify":17}],16:[function(require,module,exports){
+},{"./lib/parse":17,"./lib/stringify":18}],17:[function(require,module,exports){
 var at, // The index of the current character
     ch, // The current character
     escapee = {
@@ -2670,7 +2686,7 @@ module.exports = function (source, reviver) {
     }({'': result}, '')) : result;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 var cx = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
     escapable = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
     gap,

@@ -41,8 +41,8 @@
     }
   }
 
-  function createProxy(maps) {
-    var proxy = {};
+  function createProxy(maps, proxy) {
+    proxy = proxy || {};
     proxy.extend = function(obj) {
       var toRender = {};
       Object.keys(obj).forEach(function(prop) {
@@ -74,7 +74,7 @@
     return proxy;
   }
 
-  return function(el, orig) {
+  return function(el, model) {
     var pattern = /\{\{.+?\}\}/g,
         pipe = '|';
 
@@ -96,11 +96,11 @@
     }
 
     function traverse(el, orig) {
-      var orig = orig || {},
-          binds = {},
+      var binds = {},
           rebinds = {},
           renders = {},
           count = 0;
+      orig = orig || {};
 
       function bindRenders(chains, renderId) {
         // Create property to render mapping
@@ -190,7 +190,7 @@
 
       // Remove no-traverse attribute if root node
       el.removeAttribute('data-subview');
-
+require('fs');
       traverseElements(el, function(el_) {
         var i, iter, template, nodes, renderId;
 
@@ -245,6 +245,6 @@
       });
       return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
-    return createProxy(traverse(el, orig));
+    return createProxy(traverse(el, model && extend({}, model)), model);
   };
 }());
