@@ -1,3 +1,3 @@
 #!/bin/sh
 
-browserify ../browser.js > script.js
+browserify -d ../browser.js -o script.js
