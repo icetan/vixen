@@ -136,18 +136,23 @@
       }
 
       function mapAttribute(owner, attr) {
-        var eventId, renderId, str, noTmpl;
+        var name, eventId, renderId, str, noTmpl;
         if ((str = attr.value) && (chains = match(str))) {
-          if (attr.name.indexOf('on') === 0) {
+          name = attr.name;
+          if (name.indexOf('vx-') === 0) {
+            owner.removeAttribute(name);
+            name = name.substr(3);
+          }
+          if (name.indexOf('on') === 0) {
             renderId = -1; // No renderer
-            eventName = attr.name.substr(2);
+            eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
               owner.addEventListener(eventName, function(evt) {
                 return resolveProp(orig, chain[0])(evt, owner.value);
               });
             });
-            owner.removeAttribute(attr.name);
+            owner.removeAttribute(name);
           } else {
             noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
               str.substr(-1) === '}';
@@ -155,9 +160,8 @@
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
               var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
-              //if (clear) return owner.setAttribute(attr.name, val);
-              !clear && attr.name in owner ? owner[attr.name] = val :
-                owner.setAttribute(attr.name, val);
+              !clear && name in owner ? owner[name] = val :
+                owner.setAttribute(name, val);
             })(orig, true);
             // Bi-directional coupling.
             if (noTmpl) rebinds[chains[0][0]] = function() {
@@ -165,8 +169,8 @@
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
                 // more securely.
-                return attr.name in owner ?
-                  owner[attr.name] : owner.getAttribute(attr.name);
+                return name in owner ?
+                  owner[name] : owner.getAttribute(name);
               };
           }
           bindRenders(chains, renderId);

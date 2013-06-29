@@ -475,4 +475,23 @@ module.exports = function(test, jsdom) {
       }
     );
   });
+
+  test('remove "vx-" prefix on attribute names', function(t) {
+    t.plan(5);
+    jsdom.env(
+      '<html><body><img id="image" vx-title="dont remove prefix" vx-src="{{src}}"></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { src: 'test.png' },
+            viewModel = vixen(body),
+            img = window.document.getElementById('image');
+        t.ok(img.hasAttribute('vx-title'));
+        t.notOk(img.hasAttribute('vx-src'));
+        t.equal(img.getAttribute('src'), '');
+        viewModel.extend(model);
+        t.notOk(img.hasAttribute('vx-src'));
+        t.equal(img.getAttribute('src'), 'test.png');
+      }
+    );
+  });
 };
