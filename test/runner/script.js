@@ -1,4 +1,17 @@
 ;(function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+var test = require('./test'),
+    tape = require('tape');
+
+test(tape, {
+  env: function(html, scripts, callback) {
+    var iframe = document.createElement('iframe');
+    document.getElementsByTagName('body')[0].appendChild(iframe);
+    iframe.contentWindow.document.write(html);
+    callback(undefined, iframe.contentWindow);
+  }
+});
+
+},{"./test":2,"tape":3}],2:[function(require,module,exports){
 var vixen = require('../');
 
 function getBody(window) {
@@ -476,9 +489,28 @@ module.exports = function(test, jsdom) {
       }
     );
   });
+
+  test('remove "vx-" prefix on attribute names', function(t) {
+    t.plan(5);
+    jsdom.env(
+      '<html><body><img id="image" vx-title="dont remove prefix" vx-src="{{src}}"></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { src: 'test.png' },
+            viewModel = vixen(body),
+            img = window.document.getElementById('image');
+        t.ok(img.hasAttribute('vx-title'));
+        t.notOk(img.hasAttribute('vx-src'));
+        t.equal(img.getAttribute('src'), '');
+        viewModel.extend(model);
+        t.notOk(img.hasAttribute('vx-src'));
+        t.equal(img.getAttribute('src'), 'test.png');
+      }
+    );
+  });
 };
 
-},{"../":2}],2:[function(require,module,exports){
+},{"../":4}],4:[function(require,module,exports){
 !function(obj) {
   if (typeof module !== 'undefined')
     module.exports = obj;
@@ -617,18 +649,23 @@ module.exports = function(test, jsdom) {
       }
 
       function mapAttribute(owner, attr) {
-        var eventId, renderId, str, noTmpl;
+        var name, eventId, renderId, str, noTmpl;
         if ((str = attr.value) && (chains = match(str))) {
-          if (attr.name.indexOf('on') === 0) {
+          name = attr.name;
+          if (name.indexOf('vx-') === 0) {
+            owner.removeAttribute(name);
+            name = name.substr(3);
+          }
+          if (name.indexOf('on') === 0) {
             renderId = -1; // No renderer
-            eventName = attr.name.substr(2);
+            eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
               owner.addEventListener(eventName, function(evt) {
                 return resolveProp(orig, chain[0])(evt, owner.value);
               });
             });
-            owner.removeAttribute(attr.name);
+            owner.removeAttribute(name);
           } else {
             noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
               str.substr(-1) === '}';
@@ -636,9 +673,8 @@ module.exports = function(test, jsdom) {
             renderId = count++;
             (renders[renderId] = function(orig, clear) {
               var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
-              //if (clear) return owner.setAttribute(attr.name, val);
-              !clear && attr.name in owner ? owner[attr.name] = val :
-                owner.setAttribute(attr.name, val);
+              !clear && name in owner ? owner[name] = val :
+                owner.setAttribute(name, val);
             })(orig, true);
             // Bi-directional coupling.
             if (noTmpl) rebinds[chains[0][0]] = function() {
@@ -646,8 +682,8 @@ module.exports = function(test, jsdom) {
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
                 // more securely.
-                return attr.name in owner ?
-                  owner[attr.name] : owner.getAttribute(attr.name);
+                return name in owner ?
+                  owner[name] : owner.getAttribute(name);
               };
           }
           bindRenders(chains, renderId);
@@ -730,20 +766,7 @@ module.exports = function(test, jsdom) {
   };
 }());
 
-},{}],3:[function(require,module,exports){
-var test = require('./test'),
-    tape = require('tape');
-
-test(tape, {
-  env: function(html, scripts, callback) {
-    var iframe = document.createElement('iframe');
-    document.getElementsByTagName('body')[0].appendChild(iframe);
-    iframe.contentWindow.document.write(html);
-    callback(undefined, iframe.contentWindow);
-  }
-});
-
-},{"./test":1,"tape":4}],5:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -797,7 +820,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function(process){var createDefaultStream = require('./lib/default_stream');
 var Render = require('./lib/render');
 var Test = require('./lib/test');
@@ -997,184 +1020,6 @@ module.exports = function () {
 };
 
 },{"stream":9}],10:[function(require,module,exports){
-(function(process){function filter (xs, fn) {
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (fn(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length; i >= 0; i--) {
-    var last = parts[i];
-    if (last == '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
-}
-
-// Regex to split a filename into [*, dir, basename, ext]
-// posix version
-var splitPathRe = /^(.+\/(?!$)|\/)?((?:.+?)?(\.[^.]*)?)$/;
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-var resolvedPath = '',
-    resolvedAbsolute = false;
-
-for (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {
-  var path = (i >= 0)
-      ? arguments[i]
-      : process.cwd();
-
-  // Skip empty and invalid entries
-  if (typeof path !== 'string' || !path) {
-    continue;
-  }
-
-  resolvedPath = path + '/' + resolvedPath;
-  resolvedAbsolute = path.charAt(0) === '/';
-}
-
-// At this point the path should be resolved to a full absolute path, but
-// handle relative paths to be safe (might happen when process.cwd() fails)
-
-// Normalize the path
-resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-var isAbsolute = path.charAt(0) === '/',
-    trailingSlash = path.slice(-1) === '/';
-
-// Normalize the path
-path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-  
-  return (isAbsolute ? '/' : '') + path;
-};
-
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    return p && typeof p === 'string';
-  }).join('/'));
-};
-
-
-exports.dirname = function(path) {
-  var dir = splitPathRe.exec(path)[1] || '';
-  var isWindows = false;
-  if (!dir) {
-    // No dirname
-    return '.';
-  } else if (dir.length === 1 ||
-      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {
-    // It is just a slash or a drive letter with a slash
-    return dir;
-  } else {
-    // It is a full dirname, strip trailing slash
-    return dir.substring(0, dir.length - 1);
-  }
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPathRe.exec(path)[2] || '';
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPathRe.exec(path)[3] || '';
-};
-
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-})(require("__browserify_process"))
-},{"__browserify_process":5}],11:[function(require,module,exports){
 (function(process){if (!process.EventEmitter) process.EventEmitter = function () {};
 
 var EventEmitter = exports.EventEmitter = process.EventEmitter;
@@ -1360,6 +1205,184 @@ EventEmitter.prototype.listeners = function(type) {
 };
 
 })(require("__browserify_process"))
+},{"__browserify_process":5}],11:[function(require,module,exports){
+(function(process){function filter (xs, fn) {
+    var res = [];
+    for (var i = 0; i < xs.length; i++) {
+        if (fn(xs[i], i, xs)) res.push(xs[i]);
+    }
+    return res;
+}
+
+// resolves . and .. elements in a path array with directory names there
+// must be no slashes, empty elements, or device names (c:\) in the array
+// (so also no leading and trailing slashes - it does not distinguish
+// relative and absolute paths)
+function normalizeArray(parts, allowAboveRoot) {
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = parts.length; i >= 0; i--) {
+    var last = parts[i];
+    if (last == '.') {
+      parts.splice(i, 1);
+    } else if (last === '..') {
+      parts.splice(i, 1);
+      up++;
+    } else if (up) {
+      parts.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (allowAboveRoot) {
+    for (; up--; up) {
+      parts.unshift('..');
+    }
+  }
+
+  return parts;
+}
+
+// Regex to split a filename into [*, dir, basename, ext]
+// posix version
+var splitPathRe = /^(.+\/(?!$)|\/)?((?:.+?)?(\.[^.]*)?)$/;
+
+// path.resolve([from ...], to)
+// posix version
+exports.resolve = function() {
+var resolvedPath = '',
+    resolvedAbsolute = false;
+
+for (var i = arguments.length; i >= -1 && !resolvedAbsolute; i--) {
+  var path = (i >= 0)
+      ? arguments[i]
+      : process.cwd();
+
+  // Skip empty and invalid entries
+  if (typeof path !== 'string' || !path) {
+    continue;
+  }
+
+  resolvedPath = path + '/' + resolvedPath;
+  resolvedAbsolute = path.charAt(0) === '/';
+}
+
+// At this point the path should be resolved to a full absolute path, but
+// handle relative paths to be safe (might happen when process.cwd() fails)
+
+// Normalize the path
+resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
+    return !!p;
+  }), !resolvedAbsolute).join('/');
+
+  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
+};
+
+// path.normalize(path)
+// posix version
+exports.normalize = function(path) {
+var isAbsolute = path.charAt(0) === '/',
+    trailingSlash = path.slice(-1) === '/';
+
+// Normalize the path
+path = normalizeArray(filter(path.split('/'), function(p) {
+    return !!p;
+  }), !isAbsolute).join('/');
+
+  if (!path && !isAbsolute) {
+    path = '.';
+  }
+  if (path && trailingSlash) {
+    path += '/';
+  }
+  
+  return (isAbsolute ? '/' : '') + path;
+};
+
+
+// posix version
+exports.join = function() {
+  var paths = Array.prototype.slice.call(arguments, 0);
+  return exports.normalize(filter(paths, function(p, index) {
+    return p && typeof p === 'string';
+  }).join('/'));
+};
+
+
+exports.dirname = function(path) {
+  var dir = splitPathRe.exec(path)[1] || '';
+  var isWindows = false;
+  if (!dir) {
+    // No dirname
+    return '.';
+  } else if (dir.length === 1 ||
+      (isWindows && dir.length <= 3 && dir.charAt(1) === ':')) {
+    // It is just a slash or a drive letter with a slash
+    return dir;
+  } else {
+    // It is a full dirname, strip trailing slash
+    return dir.substring(0, dir.length - 1);
+  }
+};
+
+
+exports.basename = function(path, ext) {
+  var f = splitPathRe.exec(path)[2] || '';
+  // TODO: make this comparison case-insensitive on windows?
+  if (ext && f.substr(-1 * ext.length) === ext) {
+    f = f.substr(0, f.length - ext.length);
+  }
+  return f;
+};
+
+
+exports.extname = function(path) {
+  return splitPathRe.exec(path)[3] || '';
+};
+
+exports.relative = function(from, to) {
+  from = exports.resolve(from).substr(1);
+  to = exports.resolve(to).substr(1);
+
+  function trim(arr) {
+    var start = 0;
+    for (; start < arr.length; start++) {
+      if (arr[start] !== '') break;
+    }
+
+    var end = arr.length - 1;
+    for (; end >= 0; end--) {
+      if (arr[end] !== '') break;
+    }
+
+    if (start > end) return [];
+    return arr.slice(start, end - start + 1);
+  }
+
+  var fromParts = trim(from.split('/'));
+  var toParts = trim(to.split('/'));
+
+  var length = Math.min(fromParts.length, toParts.length);
+  var samePartsLength = length;
+  for (var i = 0; i < length; i++) {
+    if (fromParts[i] !== toParts[i]) {
+      samePartsLength = i;
+      break;
+    }
+  }
+
+  var outputParts = [];
+  for (var i = samePartsLength; i < fromParts.length; i++) {
+    outputParts.push('..');
+  }
+
+  outputParts = outputParts.concat(toParts.slice(samePartsLength));
+
+  return outputParts.join('/');
+};
+
+})(require("__browserify_process"))
 },{"__browserify_process":5}],9:[function(require,module,exports){
 var events = require('events');
 var util = require('util');
@@ -1481,7 +1504,360 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":11,"util":12}],7:[function(require,module,exports){
+},{"events":10,"util":12}],12:[function(require,module,exports){
+var events = require('events');
+
+exports.isArray = isArray;
+exports.isDate = function(obj){return Object.prototype.toString.call(obj) === '[object Date]'};
+exports.isRegExp = function(obj){return Object.prototype.toString.call(obj) === '[object RegExp]'};
+
+
+exports.print = function () {};
+exports.puts = function () {};
+exports.debug = function() {};
+
+exports.inspect = function(obj, showHidden, depth, colors) {
+  var seen = [];
+
+  var stylize = function(str, styleType) {
+    // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+    var styles =
+        { 'bold' : [1, 22],
+          'italic' : [3, 23],
+          'underline' : [4, 24],
+          'inverse' : [7, 27],
+          'white' : [37, 39],
+          'grey' : [90, 39],
+          'black' : [30, 39],
+          'blue' : [34, 39],
+          'cyan' : [36, 39],
+          'green' : [32, 39],
+          'magenta' : [35, 39],
+          'red' : [31, 39],
+          'yellow' : [33, 39] };
+
+    var style =
+        { 'special': 'cyan',
+          'number': 'blue',
+          'boolean': 'yellow',
+          'undefined': 'grey',
+          'null': 'bold',
+          'string': 'green',
+          'date': 'magenta',
+          // "name": intentionally not styling
+          'regexp': 'red' }[styleType];
+
+    if (style) {
+      return '\033[' + styles[style][0] + 'm' + str +
+             '\033[' + styles[style][1] + 'm';
+    } else {
+      return str;
+    }
+  };
+  if (! colors) {
+    stylize = function(str, styleType) { return str; };
+  }
+
+  function format(value, recurseTimes) {
+    // Provide a hook for user-specified inspect functions.
+    // Check that value is an object with an inspect function on it
+    if (value && typeof value.inspect === 'function' &&
+        // Filter out the util module, it's inspect function is special
+        value !== exports &&
+        // Also filter out any prototype objects using the circular check.
+        !(value.constructor && value.constructor.prototype === value)) {
+      return value.inspect(recurseTimes);
+    }
+
+    // Primitive types cannot have properties
+    switch (typeof value) {
+      case 'undefined':
+        return stylize('undefined', 'undefined');
+
+      case 'string':
+        var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                                 .replace(/'/g, "\\'")
+                                                 .replace(/\\"/g, '"') + '\'';
+        return stylize(simple, 'string');
+
+      case 'number':
+        return stylize('' + value, 'number');
+
+      case 'boolean':
+        return stylize('' + value, 'boolean');
+    }
+    // For some reason typeof null is "object", so special case here.
+    if (value === null) {
+      return stylize('null', 'null');
+    }
+
+    // Look up the keys of the object.
+    var visible_keys = Object_keys(value);
+    var keys = showHidden ? Object_getOwnPropertyNames(value) : visible_keys;
+
+    // Functions without properties can be shortcutted.
+    if (typeof value === 'function' && keys.length === 0) {
+      if (isRegExp(value)) {
+        return stylize('' + value, 'regexp');
+      } else {
+        var name = value.name ? ': ' + value.name : '';
+        return stylize('[Function' + name + ']', 'special');
+      }
+    }
+
+    // Dates without properties can be shortcutted
+    if (isDate(value) && keys.length === 0) {
+      return stylize(value.toUTCString(), 'date');
+    }
+
+    var base, type, braces;
+    // Determine the object type
+    if (isArray(value)) {
+      type = 'Array';
+      braces = ['[', ']'];
+    } else {
+      type = 'Object';
+      braces = ['{', '}'];
+    }
+
+    // Make functions say that they are functions
+    if (typeof value === 'function') {
+      var n = value.name ? ': ' + value.name : '';
+      base = (isRegExp(value)) ? ' ' + value : ' [Function' + n + ']';
+    } else {
+      base = '';
+    }
+
+    // Make dates with properties first say the date
+    if (isDate(value)) {
+      base = ' ' + value.toUTCString();
+    }
+
+    if (keys.length === 0) {
+      return braces[0] + base + braces[1];
+    }
+
+    if (recurseTimes < 0) {
+      if (isRegExp(value)) {
+        return stylize('' + value, 'regexp');
+      } else {
+        return stylize('[Object]', 'special');
+      }
+    }
+
+    seen.push(value);
+
+    var output = keys.map(function(key) {
+      var name, str;
+      if (value.__lookupGetter__) {
+        if (value.__lookupGetter__(key)) {
+          if (value.__lookupSetter__(key)) {
+            str = stylize('[Getter/Setter]', 'special');
+          } else {
+            str = stylize('[Getter]', 'special');
+          }
+        } else {
+          if (value.__lookupSetter__(key)) {
+            str = stylize('[Setter]', 'special');
+          }
+        }
+      }
+      if (visible_keys.indexOf(key) < 0) {
+        name = '[' + key + ']';
+      }
+      if (!str) {
+        if (seen.indexOf(value[key]) < 0) {
+          if (recurseTimes === null) {
+            str = format(value[key]);
+          } else {
+            str = format(value[key], recurseTimes - 1);
+          }
+          if (str.indexOf('\n') > -1) {
+            if (isArray(value)) {
+              str = str.split('\n').map(function(line) {
+                return '  ' + line;
+              }).join('\n').substr(2);
+            } else {
+              str = '\n' + str.split('\n').map(function(line) {
+                return '   ' + line;
+              }).join('\n');
+            }
+          }
+        } else {
+          str = stylize('[Circular]', 'special');
+        }
+      }
+      if (typeof name === 'undefined') {
+        if (type === 'Array' && key.match(/^\d+$/)) {
+          return str;
+        }
+        name = JSON.stringify('' + key);
+        if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+          name = name.substr(1, name.length - 2);
+          name = stylize(name, 'name');
+        } else {
+          name = name.replace(/'/g, "\\'")
+                     .replace(/\\"/g, '"')
+                     .replace(/(^"|"$)/g, "'");
+          name = stylize(name, 'string');
+        }
+      }
+
+      return name + ': ' + str;
+    });
+
+    seen.pop();
+
+    var numLinesEst = 0;
+    var length = output.reduce(function(prev, cur) {
+      numLinesEst++;
+      if (cur.indexOf('\n') >= 0) numLinesEst++;
+      return prev + cur.length + 1;
+    }, 0);
+
+    if (length > 50) {
+      output = braces[0] +
+               (base === '' ? '' : base + '\n ') +
+               ' ' +
+               output.join(',\n  ') +
+               ' ' +
+               braces[1];
+
+    } else {
+      output = braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+    }
+
+    return output;
+  }
+  return format(obj, (typeof depth === 'undefined' ? 2 : depth));
+};
+
+
+function isArray(ar) {
+  return ar instanceof Array ||
+         Array.isArray(ar) ||
+         (ar && ar !== Object.prototype && isArray(ar.__proto__));
+}
+
+
+function isRegExp(re) {
+  return re instanceof RegExp ||
+    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
+}
+
+
+function isDate(d) {
+  if (d instanceof Date) return true;
+  if (typeof d !== 'object') return false;
+  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
+  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
+  return JSON.stringify(proto) === JSON.stringify(properties);
+}
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+exports.log = function (msg) {};
+
+exports.pump = null;
+
+var Object_keys = Object.keys || function (obj) {
+    var res = [];
+    for (var key in obj) res.push(key);
+    return res;
+};
+
+var Object_getOwnPropertyNames = Object.getOwnPropertyNames || function (obj) {
+    var res = [];
+    for (var key in obj) {
+        if (Object.hasOwnProperty.call(obj, key)) res.push(key);
+    }
+    return res;
+};
+
+var Object_create = Object.create || function (prototype, properties) {
+    // from es5-shim
+    var object;
+    if (prototype === null) {
+        object = { '__proto__' : null };
+    }
+    else {
+        if (typeof prototype !== 'object') {
+            throw new TypeError(
+                'typeof prototype[' + (typeof prototype) + '] != \'object\''
+            );
+        }
+        var Type = function () {};
+        Type.prototype = prototype;
+        object = new Type();
+        object.__proto__ = prototype;
+    }
+    if (typeof properties !== 'undefined' && Object.defineProperties) {
+        Object.defineProperties(object, properties);
+    }
+    return object;
+};
+
+exports.inherits = function(ctor, superCtor) {
+  ctor.super_ = superCtor;
+  ctor.prototype = Object_create(superCtor.prototype, {
+    constructor: {
+      value: ctor,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+};
+
+var formatRegExp = /%[sdj%]/g;
+exports.format = function(f) {
+  if (typeof f !== 'string') {
+    var objects = [];
+    for (var i = 0; i < arguments.length; i++) {
+      objects.push(exports.inspect(arguments[i]));
+    }
+    return objects.join(' ');
+  }
+
+  var i = 1;
+  var args = arguments;
+  var len = args.length;
+  var str = String(f).replace(formatRegExp, function(x) {
+    if (x === '%%') return '%';
+    if (i >= len) return x;
+    switch (x) {
+      case '%s': return String(args[i++]);
+      case '%d': return Number(args[i++]);
+      case '%j': return JSON.stringify(args[i++]);
+      default:
+        return x;
+    }
+  });
+  for(var x = args[i]; i < len; x = args[++i]){
+    if (x === null || typeof x !== 'object') {
+      str += ' ' + x;
+    } else {
+      str += ' ' + exports.inspect(x);
+    }
+  }
+  return str;
+};
+
+},{"events":10}],7:[function(require,module,exports){
 var Stream = require('stream');
 var json = typeof JSON === 'object' ? JSON : require('jsonify');
 
@@ -1958,367 +2334,7 @@ Test.prototype.doesNotThrow = function (fn, expected, msg, extra) {
 // vim: set softtabstop=4 shiftwidth=4:
 
 })(require("__browserify_process"),"/../node_modules/tape/lib")
-},{"events":11,"path":10,"defined":14,"deep-equal":15,"__browserify_process":5}],14:[function(require,module,exports){
-module.exports = function () {
-    for (var i = 0; i < arguments.length; i++) {
-        if (arguments[i] !== undefined) return arguments[i];
-    }
-};
-
-},{}],12:[function(require,module,exports){
-var events = require('events');
-
-exports.isArray = isArray;
-exports.isDate = function(obj){return Object.prototype.toString.call(obj) === '[object Date]'};
-exports.isRegExp = function(obj){return Object.prototype.toString.call(obj) === '[object RegExp]'};
-
-
-exports.print = function () {};
-exports.puts = function () {};
-exports.debug = function() {};
-
-exports.inspect = function(obj, showHidden, depth, colors) {
-  var seen = [];
-
-  var stylize = function(str, styleType) {
-    // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-    var styles =
-        { 'bold' : [1, 22],
-          'italic' : [3, 23],
-          'underline' : [4, 24],
-          'inverse' : [7, 27],
-          'white' : [37, 39],
-          'grey' : [90, 39],
-          'black' : [30, 39],
-          'blue' : [34, 39],
-          'cyan' : [36, 39],
-          'green' : [32, 39],
-          'magenta' : [35, 39],
-          'red' : [31, 39],
-          'yellow' : [33, 39] };
-
-    var style =
-        { 'special': 'cyan',
-          'number': 'blue',
-          'boolean': 'yellow',
-          'undefined': 'grey',
-          'null': 'bold',
-          'string': 'green',
-          'date': 'magenta',
-          // "name": intentionally not styling
-          'regexp': 'red' }[styleType];
-
-    if (style) {
-      return '\033[' + styles[style][0] + 'm' + str +
-             '\033[' + styles[style][1] + 'm';
-    } else {
-      return str;
-    }
-  };
-  if (! colors) {
-    stylize = function(str, styleType) { return str; };
-  }
-
-  function format(value, recurseTimes) {
-    // Provide a hook for user-specified inspect functions.
-    // Check that value is an object with an inspect function on it
-    if (value && typeof value.inspect === 'function' &&
-        // Filter out the util module, it's inspect function is special
-        value !== exports &&
-        // Also filter out any prototype objects using the circular check.
-        !(value.constructor && value.constructor.prototype === value)) {
-      return value.inspect(recurseTimes);
-    }
-
-    // Primitive types cannot have properties
-    switch (typeof value) {
-      case 'undefined':
-        return stylize('undefined', 'undefined');
-
-      case 'string':
-        var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                                 .replace(/'/g, "\\'")
-                                                 .replace(/\\"/g, '"') + '\'';
-        return stylize(simple, 'string');
-
-      case 'number':
-        return stylize('' + value, 'number');
-
-      case 'boolean':
-        return stylize('' + value, 'boolean');
-    }
-    // For some reason typeof null is "object", so special case here.
-    if (value === null) {
-      return stylize('null', 'null');
-    }
-
-    // Look up the keys of the object.
-    var visible_keys = Object_keys(value);
-    var keys = showHidden ? Object_getOwnPropertyNames(value) : visible_keys;
-
-    // Functions without properties can be shortcutted.
-    if (typeof value === 'function' && keys.length === 0) {
-      if (isRegExp(value)) {
-        return stylize('' + value, 'regexp');
-      } else {
-        var name = value.name ? ': ' + value.name : '';
-        return stylize('[Function' + name + ']', 'special');
-      }
-    }
-
-    // Dates without properties can be shortcutted
-    if (isDate(value) && keys.length === 0) {
-      return stylize(value.toUTCString(), 'date');
-    }
-
-    var base, type, braces;
-    // Determine the object type
-    if (isArray(value)) {
-      type = 'Array';
-      braces = ['[', ']'];
-    } else {
-      type = 'Object';
-      braces = ['{', '}'];
-    }
-
-    // Make functions say that they are functions
-    if (typeof value === 'function') {
-      var n = value.name ? ': ' + value.name : '';
-      base = (isRegExp(value)) ? ' ' + value : ' [Function' + n + ']';
-    } else {
-      base = '';
-    }
-
-    // Make dates with properties first say the date
-    if (isDate(value)) {
-      base = ' ' + value.toUTCString();
-    }
-
-    if (keys.length === 0) {
-      return braces[0] + base + braces[1];
-    }
-
-    if (recurseTimes < 0) {
-      if (isRegExp(value)) {
-        return stylize('' + value, 'regexp');
-      } else {
-        return stylize('[Object]', 'special');
-      }
-    }
-
-    seen.push(value);
-
-    var output = keys.map(function(key) {
-      var name, str;
-      if (value.__lookupGetter__) {
-        if (value.__lookupGetter__(key)) {
-          if (value.__lookupSetter__(key)) {
-            str = stylize('[Getter/Setter]', 'special');
-          } else {
-            str = stylize('[Getter]', 'special');
-          }
-        } else {
-          if (value.__lookupSetter__(key)) {
-            str = stylize('[Setter]', 'special');
-          }
-        }
-      }
-      if (visible_keys.indexOf(key) < 0) {
-        name = '[' + key + ']';
-      }
-      if (!str) {
-        if (seen.indexOf(value[key]) < 0) {
-          if (recurseTimes === null) {
-            str = format(value[key]);
-          } else {
-            str = format(value[key], recurseTimes - 1);
-          }
-          if (str.indexOf('\n') > -1) {
-            if (isArray(value)) {
-              str = str.split('\n').map(function(line) {
-                return '  ' + line;
-              }).join('\n').substr(2);
-            } else {
-              str = '\n' + str.split('\n').map(function(line) {
-                return '   ' + line;
-              }).join('\n');
-            }
-          }
-        } else {
-          str = stylize('[Circular]', 'special');
-        }
-      }
-      if (typeof name === 'undefined') {
-        if (type === 'Array' && key.match(/^\d+$/)) {
-          return str;
-        }
-        name = JSON.stringify('' + key);
-        if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-          name = name.substr(1, name.length - 2);
-          name = stylize(name, 'name');
-        } else {
-          name = name.replace(/'/g, "\\'")
-                     .replace(/\\"/g, '"')
-                     .replace(/(^"|"$)/g, "'");
-          name = stylize(name, 'string');
-        }
-      }
-
-      return name + ': ' + str;
-    });
-
-    seen.pop();
-
-    var numLinesEst = 0;
-    var length = output.reduce(function(prev, cur) {
-      numLinesEst++;
-      if (cur.indexOf('\n') >= 0) numLinesEst++;
-      return prev + cur.length + 1;
-    }, 0);
-
-    if (length > 50) {
-      output = braces[0] +
-               (base === '' ? '' : base + '\n ') +
-               ' ' +
-               output.join(',\n  ') +
-               ' ' +
-               braces[1];
-
-    } else {
-      output = braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-    }
-
-    return output;
-  }
-  return format(obj, (typeof depth === 'undefined' ? 2 : depth));
-};
-
-
-function isArray(ar) {
-  return ar instanceof Array ||
-         Array.isArray(ar) ||
-         (ar && ar !== Object.prototype && isArray(ar.__proto__));
-}
-
-
-function isRegExp(re) {
-  return re instanceof RegExp ||
-    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
-}
-
-
-function isDate(d) {
-  if (d instanceof Date) return true;
-  if (typeof d !== 'object') return false;
-  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
-  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
-  return JSON.stringify(proto) === JSON.stringify(properties);
-}
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-exports.log = function (msg) {};
-
-exports.pump = null;
-
-var Object_keys = Object.keys || function (obj) {
-    var res = [];
-    for (var key in obj) res.push(key);
-    return res;
-};
-
-var Object_getOwnPropertyNames = Object.getOwnPropertyNames || function (obj) {
-    var res = [];
-    for (var key in obj) {
-        if (Object.hasOwnProperty.call(obj, key)) res.push(key);
-    }
-    return res;
-};
-
-var Object_create = Object.create || function (prototype, properties) {
-    // from es5-shim
-    var object;
-    if (prototype === null) {
-        object = { '__proto__' : null };
-    }
-    else {
-        if (typeof prototype !== 'object') {
-            throw new TypeError(
-                'typeof prototype[' + (typeof prototype) + '] != \'object\''
-            );
-        }
-        var Type = function () {};
-        Type.prototype = prototype;
-        object = new Type();
-        object.__proto__ = prototype;
-    }
-    if (typeof properties !== 'undefined' && Object.defineProperties) {
-        Object.defineProperties(object, properties);
-    }
-    return object;
-};
-
-exports.inherits = function(ctor, superCtor) {
-  ctor.super_ = superCtor;
-  ctor.prototype = Object_create(superCtor.prototype, {
-    constructor: {
-      value: ctor,
-      enumerable: false,
-      writable: true,
-      configurable: true
-    }
-  });
-};
-
-var formatRegExp = /%[sdj%]/g;
-exports.format = function(f) {
-  if (typeof f !== 'string') {
-    var objects = [];
-    for (var i = 0; i < arguments.length; i++) {
-      objects.push(exports.inspect(arguments[i]));
-    }
-    return objects.join(' ');
-  }
-
-  var i = 1;
-  var args = arguments;
-  var len = args.length;
-  var str = String(f).replace(formatRegExp, function(x) {
-    if (x === '%%') return '%';
-    if (i >= len) return x;
-    switch (x) {
-      case '%s': return String(args[i++]);
-      case '%d': return Number(args[i++]);
-      case '%j': return JSON.stringify(args[i++]);
-      default:
-        return x;
-    }
-  });
-  for(var x = args[i]; i < len; x = args[++i]){
-    if (x === null || typeof x !== 'object') {
-      str += ' ' + x;
-    } else {
-      str += ' ' + exports.inspect(x);
-    }
-  }
-  return str;
-};
-
-},{"events":11}],15:[function(require,module,exports){
+},{"events":10,"path":11,"deep-equal":14,"defined":15,"__browserify_process":5}],14:[function(require,module,exports){
 var pSlice = Array.prototype.slice;
 var Object_keys = typeof Object.keys === 'function'
     ? Object.keys
@@ -2403,6 +2419,13 @@ function objEquiv(a, b) {
   }
   return true;
 }
+
+},{}],15:[function(require,module,exports){
+module.exports = function () {
+    for (var i = 0; i < arguments.length; i++) {
+        if (arguments[i] !== undefined) return arguments[i];
+    }
+};
 
 },{}],13:[function(require,module,exports){
 exports.parse = require('./lib/parse');
@@ -2839,5 +2862,5 @@ module.exports = function (value, replacer, space) {
     return str('', {'': value});
 };
 
-},{}]},{},[3])
+},{}]},{},[1])
 ;
