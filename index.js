@@ -111,23 +111,24 @@
       }
 
       function parseIterator(el) {
-        var marker, prefix = '', nodes = [];
+        var marker, key, nodes = [];
         if (parent_ = (el.parentElement || el.parentNode)) {
-          if (el.tagName === 'FOR') {
+          if (el.tagName === 'VX') {
             marker = el.ownerDocument.createTextNode('');
             parent_.replaceChild(marker, el);
-          } else if (el.getAttribute('data-in')) {
-            prefix = 'data-';
+          } else if (el.getAttribute('vx-in')) {
             parent_ = el;
             nodes = Array.prototype.slice.call(el.childNodes);
             marker = el.ownerDocument.createTextNode('');
             parent_.appendChild(marker);
           } else return;
           return {
-            alias: el.getAttribute(prefix+'value'),
-            key: el.getAttribute(prefix+'key'),
-            prop: el.getAttribute(prefix+'in'),
-            each: el.getAttribute(prefix+'each'),
+            alias: el.getAttribute('vx-for'),
+            key: el.hasAttribute('vx-i')
+                 ? ((key = el.getAttribute('vx-i') === 'vx-i') ? 'i' : key || 'i')
+                 : undefined,
+            prop: el.getAttribute('vx-in'),
+            each: el.getAttribute('vx-each'),
             nodes: nodes,
             parent: parent_,
             marker: marker
@@ -193,13 +194,13 @@
       }
 
       // Remove no-traverse attribute if root node
-      el.removeAttribute('data-subview');
+      el.removeAttribute('vx-subview');
 
       traverseElements(el, function(el_) {
         var i, iter, template, nodes, renderId;
 
         // Stop handling and recursion if subview.
-        if (el_.getAttribute('data-subview') !== null) return false;
+        if (el_.getAttribute('vx-subview') !== null) return false;
 
         if (iter = parseIterator(el_)) {
           nodes = iter.nodes;
@@ -241,8 +242,8 @@
           // Bind node text.
           mapTextNodes(el_);
         }
-        // Bind node attributes if not a <for>.
-        if (el_.tagName !== 'FOR') for (i = el_.attributes.length; i--;)
+        // Bind node attributes if not a <vx>.
+        if (el_.tagName !== 'VX') for (i = el_.attributes.length; i--;)
           mapAttribute(el_, el_.attributes[i]);
         // Stop recursion if iterator.
         return !iter;

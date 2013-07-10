@@ -17,9 +17,9 @@ Example usage
 
   <h2>And I like</h2>
   <ul>
-    <for value="like" key="i" in="me.likes">
+    <vx vx-for="like" vx-i vx-in="me.likes">
       <li class="{{i | alt}}">{{like}}</li>
-    </for>
+    </vx>
   </ul>
 
   <input value="{{message}}" placeholder="Write something…"/>
