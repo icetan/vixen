@@ -21,8 +21,8 @@
     "browserify": "*"
   },
   "scripts": {
-    "test": "tap test/node.js",
-    "runner": "browserify test/browser.js -o test/runner/script.js"
+    "install": "browserify test/browser.js -o test/runner/script.js",
+    "test": "tap test/node.js"
   },
   "files": ["index.js", "README.md", "LICENSE"],
 
