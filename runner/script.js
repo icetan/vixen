@@ -126,8 +126,8 @@
           return {
             alias: el.getAttribute('vx-for'),
             key: el.hasAttribute('vx-i')
-                 ? ((key = el.getAttribute('vx-i') === 'vx-i') ? 'i' : key || 'i')
-                 : undefined,
+              ? (((key = el.getAttribute('vx-i')) === 'vx-i') ? 'i' : key||'i')
+              : undefined,
             prop: el.getAttribute('vx-in'),
             each: el.getAttribute('vx-each'),
             nodes: nodes,
@@ -6717,7 +6717,21 @@ module.exports = function(test, jsdom) {
   test('should iterate object values in view model', function(t) {
     t.plan(2);
     jsdom.env(
-      '<html><body><vx vx-for="test" vx-i="i" vx-in="tests"><b>{{i}}</b>:<i>{{test}},</i></vx></body></html>', [],
+      '<html><body><vx vx-for="test" vx-in="tests"><i>{{test}},</i></vx></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body);
+        viewModel.extend({tests: {a:'lol', b:'rofl', c:'omg'}});
+        t.equal(body.children.length, 3);
+        t.equal(body.textContent, 'lol,rofl,omg,');
+      }
+    );
+  });
+
+  test('should iterate object keys and values in view model', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body><vx vx-for="value" vx-i="key" vx-in="tests"><b>{{key}}</b>:<i>{{value}},</i></vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body);
