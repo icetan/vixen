@@ -7,14 +7,14 @@
   function trim(str) {return String.prototype.trim.call(str);};
 
   function resolveProp(obj, name) {
-    return name.trim().split('.').reduce(function (p, prop) {
+    return name.trim().split('.').reduce(function(p, prop) {
       return p ? p[prop] : undefined;
     }, obj);
   }
 
   function resolveChain(obj, chain) {
     var prop = chain.shift();
-    return chain.reduce(function (p, prop) {
+    return chain.reduce(function(p, prop) {
       var f = resolveProp(obj, prop);
       return f ? f(p) : p;
     }, resolveProp(obj, prop));
@@ -35,7 +35,7 @@
   function traverseElements(el, callback) {
     var i;
     if (callback(el) !== false) {
-      for(i = el.children.length; i--;) (function (node) {
+      for(i = el.children.length; i--;) (function(node) {
         traverseElements(node, callback);
       })(el.children[i]);
     }
@@ -48,7 +48,7 @@
       Object.keys(obj).forEach(function(prop) {
         maps.orig[prop] = obj[prop];
         if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
-          if (renderId >= 0) toRender[renderId] = true;
+          if (renderId >= 0) toRender[renderId] = null;
         });
       });
       for (renderId in toRender) maps.renders[renderId](maps.orig);
