@@ -3,13 +3,7 @@
   "version": "0.5.0",
   "description": "Vixen homepage",
   "author": "Christopher Fredén <c.freden@gmail.com>",
-  "devDependencies": {
-    "tap": "~0.4.1",
-    "tape": "~0.3.3",
-    "jsdom": "~0.5.0",
-    "browserify": "2.29.1"
-  },
   "scripts": {
-    "install": "browserify test/browser.js -o test/runner/script.js"
+    "install": "cd vixen; npm install; cp -r test/runner ../"
   }
 }
