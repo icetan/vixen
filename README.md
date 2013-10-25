@@ -6,7 +6,7 @@ Vixen
 
 Minimal string/DOM templating hybrid developed for use with node-webkit.
 
-Only ~7.3kb and ~4.4kb minified.
+Only ~7.3kb and ~1.5kb minified+gzip.
 
 Example usage
 -------------
@@ -16,10 +16,8 @@ Example usage
   <h1>I'm {{me.name}}</h1>
 
   <h2>And I like</h2>
-  <ul>
-    <vx vx-for="like" vx-i vx-in="me.likes">
-      <li class="{{i | alt}}">{{like}}</li>
-    </vx>
+  <ul vx-for="like" vx-i vx-in="me.likes">
+    <li class="{{i | alt}}">{{like}}</li>
   </ul>
 
   <input value="{{message}}" placeholder="Write something…"/>
@@ -28,7 +26,7 @@ Example usage
 ```
 
 ```javascript
-var view = vixen(document.getElementById('view')).extend({
+var view = vixen(document.getElementById('view'), {
   me: {
     name: 'Vixen',
     likes: [ 'Trampolines', 'Geese', 'Washing machines', 'Other foxes' ]
