@@ -1,16 +1,18 @@
 {
   "name": "vixen",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Minimal string/DOM templating hybrid developed for use with node-webkit.",
   "author": "Christopher Fredén <c.freden@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/icetan/vixen.git"
   },
-  "licenses": [{
-    "type": "MIT",
-    "url": "https://raw.github.com/icetan/vixen/master/LICENSE"
-  }],
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://raw.github.com/icetan/vixen/master/LICENSE"
+    }
+  ],
   "engine": {
     "node": ">=0.6.0"
   },
@@ -24,19 +26,48 @@
     "install": "browserify test/browser.js -o test/runner/script.js",
     "test": "tap test/node.js"
   },
-  "files": ["index.js", "README.md", "LICENSE"],
-
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
   "testling": {
     "files": "test/browser.js",
     "browsers": {
-      "ie": [ 9, 10 ],
-      "firefox": [ 17, 18, 19, "nightly" ],
-      "chrome": [ 23, 24, 25, "canary" ],
-      "safari": [ 5.1, 6 ],
-      "iphone": [ 6 ],
-      "ipad": [ 6 ],
-      "opera": [ 11.6, 12, "next" ],
-      "android-browser": [ 4.2 ]
+      "ie": [
+        9,
+        10
+      ],
+      "firefox": [
+        17,
+        18,
+        19,
+        "nightly"
+      ],
+      "chrome": [
+        23,
+        24,
+        25,
+        "canary"
+      ],
+      "safari": [
+        5.1,
+        6
+      ],
+      "iphone": [
+        6
+      ],
+      "ipad": [
+        6
+      ],
+      "opera": [
+        11.6,
+        12,
+        "next"
+      ],
+      "android-browser": [
+        4.2
+      ]
     }
   }
 }
