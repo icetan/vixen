@@ -1,6 +1,6 @@
 {
   "name": "vixen",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Minimal string/DOM templating hybrid developed for use with node-webkit.",
   "author": "Christopher Fredén <c.freden@gmail.com>",
   "repository": {
@@ -34,14 +34,38 @@
   "testling": {
     "files": "test/browser.js",
     "browsers": {
-      "ie": [ 9, 10 ],
-      "firefox": [ 23, 24, "nightly" ],
-      "chrome": [ 28, 29, "canary" ],
-      "safari": [ 5.1, 6 ],
-      "iphone": [ 6 ],
-      "ipad": [ 6 ],
-      "opera": [ 12, 15, "next" ],
-      "android-browser": [ 4.2 ]
+      "ie": [
+        9,
+        10
+      ],
+      "firefox": [
+        23,
+        24,
+        "nightly"
+      ],
+      "chrome": [
+        28,
+        29,
+        "canary"
+      ],
+      "safari": [
+        5.1,
+        6
+      ],
+      "iphone": [
+        6
+      ],
+      "ipad": [
+        6
+      ],
+      "opera": [
+        12,
+        15,
+        "next"
+      ],
+      "android-browser": [
+        4.2
+      ]
     }
   }
 }
