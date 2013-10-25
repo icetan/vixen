@@ -67,7 +67,7 @@
       </h1>
       <ul>
         <li>String/DOM templating hybrid.</li>
-        <li>Minimal, only ~7.3kb and ~4.4kb minified.</li>
+        <li>Minimal, only ~7.3kb and ~1.5kb gzip+minified.</li>
         <li>Renders on both client and server side with Node.js.</li>
         <li><a href="test/runner/index.html">Has test suite.</a></li>
       </ul>
@@ -81,10 +81,8 @@
   <h1>I'm {{me.name}}</h1>
 
   <h2>and I like</h2>
-  <ul>
-    <for value="like" key="i" in="me.likes">
-      <li class="{{i | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
-    </for>
+  <ul vx-for="like" vx-i="index" vx-in="me.likes">
+    <li class="{{index | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
   </ul>
 
   <input value="{{message}}" placeholder="Write something…" />
@@ -101,7 +99,7 @@
     </script>
 
 <script id="source">
-var view = vixen(document.getElementById('view')).extend({
+var view = vixen(document.getElementById('view'), {
   me: {
     name: 'Vixen',
     likes: [ {text:'Trampolines', url:'http://youtu.be/c8xJtH6UcQY'},
