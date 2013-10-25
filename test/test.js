@@ -258,6 +258,29 @@ module.exports = function(test, jsdom) {
     );
   });
 
+  test('should push/unshift item to rendered iterator witout rerendering each item', function(t) {
+    t.plan(8);
+    jsdom.env(
+      '<html><body>before<vx vx-for="val" vx-i="i" vx-in="stuff">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body).extend({
+              stuff: [3,5,1,2]
+            });
+        t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,after');
+        viewModel.stuff[1] = 105;
+        t.equal(viewModel.push('stuff', 13), 5);
+        t.deepEqual(viewModel.stuff, [3, 105, 1, 2, 13]);
+        t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,4:13,after');
+        t.equal(viewModel.unshift('stuff', 1, 2), 7);
+        t.deepEqual(viewModel.stuff, [1, 2, 3, 105, 1, 2, 13]);
+        t.equal(body.textContent, 'before-2:1,-1:2,0:3,1:5,2:1,3:2,4:13,after');
+        viewModel.stuff = [1,2,3];
+        t.equal(body.textContent, 'before0:1,1:2,2:3,after');
+      }
+    );
+  });
+
   test('should fire event handlers', function(t) {
     t.plan(3);
     jsdom.env(

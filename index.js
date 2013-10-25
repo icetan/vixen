@@ -54,6 +54,20 @@
       for (renderId in toRender) maps.renders[renderId](maps.orig);
       return proxy;
     };
+    // Map Array functions to iterator renderer functions.
+    ['push', 'unshift'].forEach(function(fname) {
+      proxy[fname] = function(prop) {
+        var list = resolveProp(maps.orig, prop), args, render;
+        if (!list) return;
+        args = [].slice.call(arguments, 1);
+        maps.binds[prop].forEach(function(rId) {
+          if (rId < 0) return;
+          render = maps.renders[rId];
+          render[fname].apply(render, args);
+        });
+        return list[fname].apply(list, args);
+      };
+    });
 
     Object.keys(maps.binds).forEach(function(prop) {
       var ids = maps.binds[prop];
@@ -197,7 +211,7 @@
       el.removeAttribute('vx-subview');
 
       traverseElements(el, function(el_) {
-        var i, iter, template, nodes, renderId;
+        var i, iter, template, nodes, renderId, insertNode, offset;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('vx-subview') !== null) return false;
@@ -207,34 +221,52 @@
           template = el_.cloneNode(true);
           maps = traverse(template.cloneNode(true));
           renderId = count++;
+          offset = 0;
+
+          insertNode = function(orig, value, i, each_, unshift){
+            var orig_ = extend({}, orig),
+                clone = template.cloneNode(true),
+                lastNode = unshift ? nodes[0] : iter.marker,
+                maps, renderId, i_, node, nodes_ = [];
+            if (iter.key) orig_[iter.key] = i;
+            orig_[iter.alias] = value;
+            maps = traverse(clone, orig_);
+            for (i_ = clone.childNodes.length; i_--; lastNode = node) {
+              nodes_.unshift(node = clone.childNodes[i_]);
+              iter.parent.insertBefore(node, lastNode);
+            }
+            if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
+              return n.nodeType === el_.ELEMENT_NODE;
+            })) != null) {
+              for (i_ = nodes_.length; i_--;)
+                iter.parent.removeChild(nodes_[i_]);
+            } else {
+              nodes = unshift ? nodes_.concat(nodes) : nodes.concat(nodes_);
+            }
+          };
+
           (renders[renderId] = function(orig) {
+            // TODO: clean up this setup code.
             var list = resolveProp(orig, iter.prop),
                 each_ = iter.each && resolveProp(orig, iter.each), i;
+            offset = 0;
             for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
             nodes = [];
             for (i in list) if (list.hasOwnProperty(i))
-              (function(value, i){
-                var orig_ = extend({}, orig),
-                    clone = template.cloneNode(true),
-                    lastNode = iter.marker,
-                    maps, renderId, i_, node, nodes_ = [];
-                if (iter.key) orig_[iter.key] = i;
-                orig_[iter.alias] = value;
-                maps = traverse(clone, orig_);
-                for (i_ = clone.childNodes.length; i_--; lastNode = node) {
-                  nodes_.push(node = clone.childNodes[i_]);
-                  iter.parent.insertBefore(node, lastNode);
-                }
-                if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
-                  return n.nodeType === el_.ELEMENT_NODE;
-                })) != null) {
-                  for (i_ = nodes_.length; i_--;)
-                    iter.parent.removeChild(nodes_[i_]);
-                } else {
-                  nodes = nodes.concat(nodes_);
-                }
-              })(list[i], i);
+              insertNode(orig, list[i], i, each_);
           })(orig);
+          renders[renderId].push = function() {
+            var list = resolveProp(orig, iter.prop),
+                each_ = iter.each && resolveProp(orig, iter.each), i;
+            for (i in arguments)
+              insertNode(orig, arguments[i], list.length+parseInt(i), each_);
+          };
+          renders[renderId].unshift = function() {
+            var each_ = iter.each && resolveProp(orig, iter.each),
+                args = [].reverse.call(arguments), i;
+            for (i in args) insertNode(orig, args[i], --offset, each_, true);
+          };
+
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
