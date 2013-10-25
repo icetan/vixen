@@ -125,8 +125,8 @@
           return {
             alias: el.getAttribute('vx-for'),
             key: el.hasAttribute('vx-i')
-                 ? ((key = el.getAttribute('vx-i') === 'vx-i') ? 'i' : key || 'i')
-                 : undefined,
+              ? (((key = el.getAttribute('vx-i')) === 'vx-i') ? 'i' : key||'i')
+              : undefined,
             prop: el.getAttribute('vx-in'),
             each: el.getAttribute('vx-each'),
             nodes: nodes,
