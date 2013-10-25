@@ -14,7 +14,7 @@
     }
   ],
   "engine": {
-    "node": ">=0.6.0"
+    "node": ">=0.8.0"
   },
   "devDependencies": {
     "tap": "*",
@@ -34,40 +34,14 @@
   "testling": {
     "files": "test/browser.js",
     "browsers": {
-      "ie": [
-        9,
-        10
-      ],
-      "firefox": [
-        17,
-        18,
-        19,
-        "nightly"
-      ],
-      "chrome": [
-        23,
-        24,
-        25,
-        "canary"
-      ],
-      "safari": [
-        5.1,
-        6
-      ],
-      "iphone": [
-        6
-      ],
-      "ipad": [
-        6
-      ],
-      "opera": [
-        11.6,
-        12,
-        "next"
-      ],
-      "android-browser": [
-        4.2
-      ]
+      "ie": [ 9, 10 ],
+      "firefox": [ 23, 24, "nightly" ],
+      "chrome": [ 28, 29, "canary" ],
+      "safari": [ 5.1, 6 ],
+      "iphone": [ 6 ],
+      "ipad": [ 6 ],
+      "opera": [ 12, 15, "next" ],
+      "android-browser": [ 4.2 ]
     }
   }
 }
