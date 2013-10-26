@@ -435,21 +435,30 @@ module.exports = function(test, jsdom) {
     );
   });
 
-  test('should only add bi-directional bindings for non-templated attributes', function(t) {
-    t.plan(6);
+  test('should only add bi-directional bindings for non-templated and non-filtered attributes', function(t) {
+    t.plan(10);
     jsdom.env(
-      '<html><body><input id="test" type="text" value="{{text}}{{moreText}}" class="large {{classes}}"></body></html>', [],
+      '<html><body><input id="test" type="text" value="{{text}}{{moreText}}" class="large {{classes}}" data-lol="{{lol | filter}}"></body></html>', [],
       function(err, window) {
-        var viewModel = vixen(getBody(window)),
+        var viewModel = vixen(getBody(window), { filter:function() {return '';} }),
             input = window.document.getElementById('test');
+
         t.equal(viewModel.text, undefined);
         input.value = 'strunt';
         t.equal(viewModel.text, undefined);
+
         t.equal(input.className, 'large ');
         t.equal(viewModel.classes, undefined);
         viewModel.classes = 'valid';
         t.equal(input.className, 'large valid');
         t.equal(viewModel.classes, 'valid');
+
+        t.equal(input.getAttribute('data-lol'), '');
+        t.equal(viewModel.lol, undefined);
+        input.setAttribute('data-lol', 'mjau');
+        t.equal(viewModel.lol, undefined);
+        viewModel.lol = 'tattio';
+        t.equal(viewModel.lol, 'tattio');
       }
     );
   });

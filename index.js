@@ -179,7 +179,8 @@
                 owner.setAttribute(name, val);
             })(orig, true);
             // Bi-directional coupling.
-            if (noTmpl) rebinds[chains[0][0]] = function() {
+            if (noTmpl && chains[0].length === 1)
+              rebinds[chains[0][0]] = function() {
                 // TODO: Getting f.ex. 'value' attribute from an input
                 // doesn't return user input value so accessing element
                 // object properties directly, find out how to do this
