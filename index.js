@@ -163,8 +163,28 @@
             eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
+              // One parameter pipe syntax
+              //if (chain.length > 1) {
+              //  owner.addEventListener(eventName, function(evt) {
+              //    var fn = resolveProp(orig, chain[1]),
+              //        ctx = resolveProp(orig, chain[0]);
+              //    return fn.call(owner, evt, ctx);
+              //  });
+              //} else {
+              //  owner.addEventListener(eventName, function(evt) {
+              //    var fn = resolveProp(orig, chain[0]);
+              //    return fn.call(owner, evt, owner.value);
+              //  });
+              //}
+              //
+              // or
+
+              // Multi parameter space syntax
               owner.addEventListener(eventName, function(evt) {
-                return resolveProp(orig, chain[0])(evt, owner.value);
+                var args = chain[0].split(' ').map(function(prop) {
+                      return resolveProp(orig, prop);
+                    });
+                return args[0].apply(owner, [evt].concat(args.slice(1)));
               });
             });
             owner.removeAttribute(name);
