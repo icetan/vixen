@@ -304,19 +304,43 @@ module.exports = function(test, jsdom) {
     );
   });
 
-  test('should fire event handlers and give correct value', function(t) {
-    t.plan(3);
+  test('should fire event handlers and give correct scope', function(t) {
+    t.plan(4);
     jsdom.env(
       '<html><body><input type=text id="test" onchange="{{handler}}"></body></html>', [],
       function(err, window) {
         var viewModel = vixen(getBody(window)),
             input = window.document.getElementById('test'),
             evt = window.document.createEvent("HTMLEvents");
-        viewModel.handler = function(e, value) {
-          t.equal(value, 'lulz!');
+        viewModel.handler = function(e) {
+          t.equal(this, input);
+          t.equal(this.value, 'lulz!');
           t.deepEqual(e, evt);
         };
         input.value = 'lulz!';
+        t.doesNotThrow(function() {
+          var err;
+          evt.initEvent('change', true, true);
+          input.dispatchEvent(evt);
+        });
+      }
+    );
+  });
+
+  test('should fire event handlers with given parameters', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><input type=text id="test" onchange="{{handler item}}"></body></html>', [],
+      function(err, window) {
+        var viewModel = vixen(getBody(window)),
+            input = window.document.getElementById('test'),
+            evt = window.document.createEvent("HTMLEvents");
+        viewModel.item = 'wooow';
+        viewModel.handler = function(e, param) {
+          t.equal(param, 'wooow');
+          t.deepEqual(e, evt);
+        };
+        input.value = 'mjausingar';
         t.doesNotThrow(function() {
           var err;
           evt.initEvent('change', true, true);

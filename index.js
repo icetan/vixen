@@ -119,8 +119,10 @@
       function bindRenders(chains, renderId) {
         // Create property to render mapping
         chains.forEach(function(chain) {
-          // TODO: Register chaining functions as binds as well.
-          bucket(binds, chain[0].split('.')[0], renderId);
+          // Register all chaining functions as binds.
+          chain.forEach(function(prop) {
+            bucket(binds, prop.split('.')[0], renderId);
+          });
         });
       }
 
@@ -163,25 +165,11 @@
             eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
-              // One parameter pipe syntax
-              //if (chain.length > 1) {
-              //  owner.addEventListener(eventName, function(evt) {
-              //    var fn = resolveProp(orig, chain[1]),
-              //        ctx = resolveProp(orig, chain[0]);
-              //    return fn.call(owner, evt, ctx);
-              //  });
-              //} else {
-              //  owner.addEventListener(eventName, function(evt) {
-              //    var fn = resolveProp(orig, chain[0]);
-              //    return fn.call(owner, evt, owner.value);
-              //  });
-              //}
-              //
-              // or
-
+              var argProps = chain[0].split(/ +/);
+              chain.splice.apply(chain, [0, chain.length].concat(argProps));
               // Multi parameter space syntax
               owner.addEventListener(eventName, function(evt) {
-                var args = chain[0].split(' ').map(function(prop) {
+                var args = argProps.map(function(prop) {
                       return resolveProp(orig, prop);
                     });
                 return args[0].apply(owner, [evt].concat(args.slice(1)));
