@@ -4,6 +4,7 @@
   else
     window.vixen = obj;
 }(function() {
+  var keys = Object.keys;
   function trim(str) {return String.prototype.trim.call(str);};
 
   function resolveProp(obj, name) {
@@ -26,9 +27,8 @@
   }
 
   function extend(orig, obj) {
-    Object.keys(obj).forEach(function(prop) {
-      orig[prop] = obj[prop];
-    });
+    var ks = keys(obj), len = ks.length, i = -1, k;
+    while(++i < len) (k=ks[i], orig[k] = obj[k]);
     return orig;
   }
 
@@ -45,46 +45,50 @@
     proxy = proxy || {};
     proxy.extend = function(obj) {
       var toRender = {};
-      Object.keys(obj).forEach(function(prop) {
+      for(var prop, oks=keys(obj), oi=0, olen=oks.length;
+          prop=oks[oi], oi<olen; oi++) {
         maps.orig[prop] = obj[prop];
-        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
-          if (renderId >= 0) toRender[renderId] = null;
-        });
-      });
-      for (renderId in toRender) maps.renders[renderId](maps.orig);
+        if (maps.binds[prop])
+          for (var rid, mbp=maps.binds[prop], bi=0, blen=mbp.length;
+               rid=mbp[bi], bi<blen; bi++)
+            if (rid >= 0) toRender[rid] = null;
+      }
+      for(var rid, rks=keys(toRender), ri=0, rlen=rks.length;
+          rid=rks[ri], ri<rlen; ri++)
+        maps.renders[rid](maps.orig);
       return proxy;
     };
+
     // Map Array functions to iterator renderer functions.
     ['push', 'unshift'].forEach(function(fname) {
       proxy[fname] = function(prop) {
         var list = resolveProp(maps.orig, prop), args, render;
         if (!list) return;
         args = [].slice.call(arguments, 1);
-        maps.binds[prop].forEach(function(rId) {
-          if (rId < 0) return;
-          render = maps.renders[rId];
-          render[fname].apply(render, args);
-        });
+        for (var rid, mbp=maps.binds[prop], bi=0, blen=mbp.length;
+             rid=mbp[bi], bi<blen; bi++)
+          if (rid >= 0) (render=maps.renders[rid])[fname].apply(render, args);
         return list[fname].apply(list, args);
       };
     });
 
-    Object.keys(maps.binds).forEach(function(prop) {
-      var ids = maps.binds[prop];
+    function def(prop) {
+      var ids = maps.binds[prop], len = ids.length;
       Object.defineProperty(proxy, prop, {
         set: function(value) {
           maps.orig[prop] = value;
-          ids.forEach(function(renderId) {
-            if (renderId >= 0) maps.renders[renderId](maps.orig);
-          });
+          for (var rid, i=0; rid=ids[i], i<len; i++)
+            if (rid >= 0) maps.renders[rid](maps.orig);
         },
         get: function() {
-          if (maps.rebinds[prop])
-            return maps.rebinds[prop]();
+          if (maps.rebinds[prop]) return maps.rebinds[prop]();
           return maps.orig[prop];
         }
       });
-    });
+    }
+    for(var prop, mbks=keys(maps.binds), mbi=0, mblen=mbks.length;
+        prop=mbks[mbi], mbi<mblen; mbi++) def(prop);
+
     return proxy;
   }
 
@@ -118,12 +122,12 @@
 
       function bindRenders(chains, renderId) {
         // Create property to render mapping
-        chains.forEach(function(chain) {
+        for (var chain, csi=0, cslen=chains.length;
+             chain=chains[csi], csi<cslen; csi++)
           // Register all chaining functions as binds.
-          chain.forEach(function(prop) {
+          for (var prop, ci=0, clen=chain.length;
+               prop=chain[ci], ci<clen; ci++)
             bucket(binds, prop.split('.')[0], renderId);
-          });
-        });
       }
 
       function parseIterator(el) {
@@ -267,18 +271,20 @@
           renders[renderId].push = function() {
             var list = resolveProp(orig, iter.prop),
                 each_ = iter.each && resolveProp(orig, iter.each), i;
-            for (i in arguments)
+            for (i in arguments) if (arguments.hasOwnProperty(i))
               insertNode(orig, arguments[i], list.length+parseInt(i), each_);
           };
           renders[renderId].unshift = function() {
             var each_ = iter.each && resolveProp(orig, iter.each),
                 args = [].reverse.call(arguments), i;
-            for (i in args) insertNode(orig, args[i], --offset, each_, true);
+            for (i in args) if (args.hasOwnProperty(i))
+              insertNode(orig, args[i], --offset, each_, true);
           };
 
           bucket(binds, iter.prop.split('.')[0], renderId);
-          for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
-            bucket(binds, p, renderId);
+          keys(maps.binds).forEach(function(prop) {
+            if (iter.alias.indexOf(prop) === -1) bucket(binds, prop, renderId);
+          });
         } else {
           // Bind node text.
           mapTextNodes(el_);
