@@ -4,10 +4,27 @@
   else
     window.vixen = obj;
 }(function() {
+  var pattern = /\{\{.+?\}\}/g,
+      expr = /'.*?'\s*|[^ ]+\s*/g,
+      builtins = {
+        '|': function(a, b) { return b(a); },
+        '+': function(a, b) { return a + b; },
+        '-': function(a, b) { return a - b; },
+        '*': function(a, b) { return a * b; },
+        '/': function(a, b) { return a / b; },
+        '%': function(a, b) { return a % b; },
+        'is': function(a, b) { return a == b; },
+        'then': function(a, b) { return a ? b : a; },
+        'else': function(a, b) { return a ? a : b; }
+      };
+
   function trim(str) {return String.prototype.trim.call(str);};
 
   function resolveProp(obj, name) {
-    return name.trim().split('.').reduce(function(p, prop) {
+    var name = name.trim(), n;
+    if (name[0] === "'") return name.slice(1,-1);
+    if (!isNaN(n = parseFloat(name))) return n;
+    return name.split('.').reduce(function(p, prop) {
       return p ? p[prop] : undefined;
     }, obj);
   }
@@ -18,6 +35,13 @@
       var f = resolveProp(obj, prop);
       return f ? f(p) : p;
     }, resolveProp(obj, prop));
+  }
+
+  function resolveInFix(obj, props) {
+    var p = resolveProp(obj, props[0]), i, len;
+    for (i=1, len=props.length; i<len; i+=2)
+      p = resolveProp(obj, props[i])(p, resolveProp(obj, props[i+1]));
+    return p;
   }
 
   function bucket(b, k, v) {
@@ -89,12 +113,9 @@
   }
 
   return function(el, model) {
-    var pattern = /\{\{.+?\}\}/g,
-        pipe = '|';
-
     function resolve(orig, prop) {
       if (!orig) return '';
-      var val = resolveChain(orig, prop.slice(2,-2).split(pipe));
+      var val = resolveInFix(orig, prop.slice(2,-2).match(expr));
       return val === undefined ? '' : val;
     }
 
@@ -105,7 +126,7 @@
     function match(str) {
       var m = str.match(pattern);
       if (m) return m.map(function(chain) {
-        return chain.slice(2, -2).split(pipe).map(trim);
+        return chain.slice(2, -2).match(expr).map(trim);
       });
     }
 
@@ -114,13 +135,17 @@
           rebinds = {},
           renders = {},
           count = 0;
-      orig = orig || {};
+
+      if (orig) Object.keys(builtins).forEach(function(prop) {
+        if (!(prop in orig)) orig[prop] = builtins[prop];
+      });
 
       function bindRenders(chains, renderId) {
         // Create property to render mapping
         chains.forEach(function(chain) {
           // Register all chaining functions as binds.
           chain.forEach(function(prop) {
+            if (prop[0] === "'" || !isNaN(prop)) return;
             bucket(binds, prop.split('.')[0], renderId);
           });
         });
@@ -165,13 +190,9 @@
             eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
-              var argProps = chain[0].split(/ +/);
-              chain.splice.apply(chain, [0, chain.length].concat(argProps));
               // Multi parameter space syntax
               owner.addEventListener(eventName, function(evt) {
-                var args = argProps.map(function(prop) {
-                      return resolveProp(orig, prop);
-                    });
+                var args = chain.map(resolveProp.bind(null, orig));
                 return args[0].apply(owner, [evt].concat(args.slice(1)));
               });
             });
@@ -291,6 +312,6 @@
       });
       return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
-    return createProxy(traverse(el, model && extend({}, model)), model);
+    return createProxy(traverse(el, extend({}, model || {})), model);
   };
 }());

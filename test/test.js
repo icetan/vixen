@@ -355,15 +355,14 @@ module.exports = function(test, jsdom) {
     jsdom.env(
       '<html><body><div id="test">{{value | format}}kr</div></body></html>', [],
       function(err, window) {
-        var viewModel = vixen(getBody(window)),
+        var viewModel = vixen(getBody(window), {
+              value: 10.1425,
+              format: function(value) {
+                t.equal(value, 10.1425);
+                return Math.round(value);
+              }
+            }),
             div = window.document.getElementById('test');
-        viewModel.extend({
-          value: 10.1425,
-          format: function(value) {
-            t.equal(value, 10.1425);
-            return Math.round(value);
-          }
-        });
         t.equal(div.textContent, '10kr');
       }
     );
@@ -576,6 +575,34 @@ module.exports = function(test, jsdom) {
         viewModel.extend(model);
         t.notOk(img.hasAttribute('vx-src'));
         t.equal(img.getAttribute('src'), 'test.png');
+      }
+    );
+  });
+
+  test('literal values with infix expressions', function(t) {
+    t.plan(1);
+    jsdom.env(
+      '<html><body>{{4 + 3 + \'hello\'}}</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { '+': function(a, b) { return a + b; } },
+            viewModel = vixen(body, model);
+        t.equal(body.textContent, '7hello');
+      }
+    );
+  });
+
+  test('literal values with infix expressions', function(t) {
+    t.plan(2);
+    jsdom.env(
+      '<html><body>{{ lol  then \'hupp zulu\'  else \'hepp minu\'}}</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { lol: true },
+            viewModel = vixen(body, model);
+        t.equal(body.textContent, 'hupp zulu');
+        viewModel.lol = false;
+        t.equal(body.textContent, 'hepp minu');
       }
     );
   });
