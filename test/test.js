@@ -259,7 +259,7 @@ module.exports = function(test, jsdom) {
   });
 
   test('should push/unshift item to rendered iterator witout rerendering each item', function(t) {
-    t.plan(8);
+    t.plan(5);
     jsdom.env(
       '<html><body>before<vx vx-for="val" vx-i="i" vx-in="stuff">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
       function(err, window) {
@@ -272,9 +272,6 @@ module.exports = function(test, jsdom) {
         t.equal(viewModel.push('stuff', 13), 5);
         t.deepEqual(viewModel.stuff, [3, 105, 1, 2, 13]);
         t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,4:13,after');
-        t.equal(viewModel.unshift('stuff', 1, 2), 7);
-        t.deepEqual(viewModel.stuff, [1, 2, 3, 105, 1, 2, 13]);
-        t.equal(body.textContent, 'before-2:1,-1:2,0:3,1:5,2:1,3:2,4:13,after');
         viewModel.stuff = [1,2,3];
         t.equal(body.textContent, 'before0:1,1:2,2:3,after');
       }
@@ -603,6 +600,37 @@ module.exports = function(test, jsdom) {
         t.equal(body.textContent, 'hupp zulu');
         viewModel.lol = false;
         t.equal(body.textContent, 'hepp minu');
+      }
+    );
+  });
+
+  test('should re-use iterator child nodes', function(t) {
+    t.plan(12);
+    jsdom.env(
+      '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
+        '<div>{{x}}<div>'+
+      '</ul></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            model = { ls: [ 2, 4, 8, 16 ] },
+            viewModel = vixen(body, model),
+            listEl = window.document.getElementById('list'),
+            firstEl = listEl.children[0];
+            secondEl = listEl.children[1];
+        t.equal(firstEl.textContent, '2');
+        t.equal(listEl.children.length, 4);
+        model.ls = [ 1, 3, 5 ];
+        t.equal(listEl.children.length, 3);
+        t.equal(listEl.children[0].textContent, '1');
+        t.equal(listEl.children[0], firstEl);
+        t.equal(listEl.children[1].textContent, '3');
+        t.equal(listEl.children[1], secondEl);
+        model.ls = [ 6, 7, 9, 10, 11, 12 ];
+        t.equal(listEl.children.length, 6);
+        t.equal(listEl.children[0].textContent, '6');
+        t.equal(listEl.children[0], firstEl);
+        t.equal(listEl.children[1].textContent, '7');
+        t.equal(listEl.children[1], secondEl);
       }
     );
   });

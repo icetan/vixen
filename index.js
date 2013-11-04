@@ -16,7 +16,8 @@
         'is': function(a, b) { return a == b; },
         'then': function(a, b) { return a ? b : a; },
         'else': function(a, b) { return a ? a : b; }
-      };
+      },
+      keys = Object.keys;
 
   function trim(str) {return String.prototype.trim.call(str);};
 
@@ -79,19 +80,17 @@
       return proxy;
     };
     // Map Array functions to iterator renderer functions.
-    ['push', 'unshift'].forEach(function(fname) {
-      proxy[fname] = function(prop) {
-        var list = resolveProp(maps.orig, prop), args, render;
-        if (!list) return;
-        args = [].slice.call(arguments, 1);
-        maps.binds[prop].forEach(function(rId) {
-          if (rId < 0) return;
-          render = maps.renders[rId];
-          render[fname].apply(render, args);
-        });
-        return list[fname].apply(list, args);
-      };
-    });
+    proxy.push = function(prop) {
+      var list = resolveProp(maps.orig, prop), args, render;
+      if (!list) return;
+      args = [].slice.call(arguments, 1);
+      maps.binds[prop].forEach(function(rId) {
+        if (rId < 0) return;
+        render = maps.renders[rId];
+        render.push.apply(render, args);
+      });
+      return list.push.apply(list, args);
+    };
 
     Object.keys(maps.binds).forEach(function(prop) {
       var ids = maps.binds[prop];
@@ -241,26 +240,30 @@
       el.removeAttribute('vx-subview');
 
       traverseElements(el, function(el_) {
-        var i, iter, template, nodes, renderId, insertNode, offset;
+        var i, iter, template, nodes, renderId, insertNode, subproxies;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('vx-subview') !== null) return false;
 
         if (iter = parseIterator(el_)) {
           nodes = iter.nodes;
+          subproxies = [];
           template = el_.cloneNode(true);
           maps = traverse(template.cloneNode(true));
           renderId = count++;
-          offset = 0;
 
-          insertNode = function(orig, value, i, each_, unshift){
+          for (var i_ = nodes.length; i_--;)
+            iter.parent.removeChild(nodes[i_]);
+
+          insertNode = function(orig, value, i){
             var orig_ = extend({}, orig),
                 clone = template.cloneNode(true),
-                lastNode = unshift ? nodes[0] : iter.marker,
-                maps, renderId, i_, node, nodes_ = [];
+                each_ = iter.each && resolveProp(orig, iter.each),
+                lastNode = iter.marker,
+                nodes_ = [], subproxy, i_, node;
             if (iter.key) orig_[iter.key] = i;
             orig_[iter.alias] = value;
-            maps = traverse(clone, orig_);
+            subproxy = createProxy(traverse(clone, orig_));
             for (i_ = clone.childNodes.length; i_--; lastNode = node) {
               nodes_.unshift(node = clone.childNodes[i_]);
               iter.parent.insertBefore(node, lastNode);
@@ -270,33 +273,36 @@
             })) != null) {
               for (i_ = nodes_.length; i_--;)
                 iter.parent.removeChild(nodes_[i_]);
-            } else {
-              nodes = unshift ? nodes_.concat(nodes) : nodes.concat(nodes_);
             }
+            subproxy.__nodes = nodes_;
+            return subproxy;
           };
 
           (renders[renderId] = function(orig) {
-            // TODO: clean up this setup code.
             var list = resolveProp(orig, iter.prop),
-                each_ = iter.each && resolveProp(orig, iter.each), i;
-            offset = 0;
-            for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
-            nodes = [];
-            for (i in list) if (list.hasOwnProperty(i))
-              insertNode(orig, list[i], i, each_);
+                splen=subproxies.length,
+                ks, i, i_, len, item, sp, k;
+            if (list) for (i=0, ks=keys(list), len=ks.length; i<len; i++) {
+              item = list[k=ks[i]];
+              if (i < splen) {
+                sp = subproxies[i];
+                if (iter.key) sp[iter.key] = k;
+                sp[iter.alias] = item;
+              } else subproxies.push(insertNode(orig, item, k));
+            }
+            sps = subproxies.splice(i);
+            for (i=0, len=sps.length; i<len; i++) {
+              sp = sps[i];
+              spNodes = sp.__nodes;
+              for (i_=spNodes.length; i_--;) iter.parent.removeChild(spNodes[i_]);
+            }
           })(orig);
           renders[renderId].push = function() {
-            var list = resolveProp(orig, iter.prop),
-                each_ = iter.each && resolveProp(orig, iter.each), i;
+            var list = resolveProp(orig, iter.prop);
             for (i in arguments)
-              insertNode(orig, arguments[i], list.length+parseInt(i), each_);
+              subproxies.push(insertNode(orig, arguments[i],
+                                         list.length+parseInt(i)));
           };
-          renders[renderId].unshift = function() {
-            var each_ = iter.each && resolveProp(orig, iter.each),
-                args = [].reverse.call(arguments), i;
-            for (i in args) insertNode(orig, args[i], --offset, each_, true);
-          };
-
           bucket(binds, iter.prop.split('.')[0], renderId);
           for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
             bucket(binds, p, renderId);
