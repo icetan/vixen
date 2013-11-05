@@ -608,7 +608,7 @@ module.exports = function(test, jsdom) {
     t.plan(12);
     jsdom.env(
       '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
-        '<div>{{x}}<div>'+
+        '<div>{{x}}</div>'+
       '</ul></body></html>', [],
       function(err, window) {
         var body = getBody(window),
@@ -631,6 +631,27 @@ module.exports = function(test, jsdom) {
         t.equal(listEl.children[0], firstEl);
         t.equal(listEl.children[1].textContent, '7');
         t.equal(listEl.children[1], secondEl);
+      }
+    );
+  });
+
+  test('shouldn\'t request images with empty parameters', function(t) {
+    t.plan(5);
+    jsdom.env(
+      '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
+        '<img vx-src="lol/{{x}}/apix.gif"><div>{{lol.a}}-{{lol.b}}</div>'+
+      '</ul></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body),
+            listEl = window.document.getElementById('list');
+        viewModel.extend({ ls: [ 'hej', 'mfw' ] });
+        t.equal(/lol\/([^\/]*)\/apix.gif$/.exec(listEl.children[0].src)[1], 'hej');
+        t.equal(/lol\/([^\/]*)\/apix.gif$/.exec(listEl.children[2].src)[1], 'mfw');
+        t.equal(listEl.children[1].textContent, '-');
+        viewModel.lol = { a:'60', b:'wat' };
+        t.equal(listEl.children[1].textContent, '60-wat');
+        t.equal(listEl.children[3].textContent, '60-wat');
       }
     );
   });

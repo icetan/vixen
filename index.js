@@ -240,7 +240,8 @@
       el.removeAttribute('vx-subview');
 
       traverseElements(el, function(el_) {
-        var i, iter, template, nodes, renderId, insertNode, subproxies;
+        var i, iter, template, nodes, renderId, insertNode, subproxies,
+            qmatch, qp, copy, render;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('vx-subview') !== null) return false;
@@ -249,20 +250,26 @@
           nodes = iter.nodes;
           subproxies = [];
           template = el_.cloneNode(true);
-          maps = traverse(template.cloneNode(true));
           renderId = count++;
+          qmatch = {};
+          match(template.innerHTML).forEach(function(c) {
+            c.forEach(function(p) { qmatch[p.split('.')[0]] = true; });
+          });
+          copy = function(orig, i, v) {
+            var orig_ = extend({}, orig);
+            if (iter.key) orig_[iter.key] = i;
+            orig_[iter.alias] = v;
+            return orig_;
+          };
 
-          for (var i_ = nodes.length; i_--;)
-            iter.parent.removeChild(nodes[i_]);
+          for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
 
           insertNode = function(orig, value, i){
-            var orig_ = extend({}, orig),
+            var orig_ = copy(orig, i, value),
                 clone = template.cloneNode(true),
                 each_ = iter.each && resolveProp(orig, iter.each),
                 lastNode = iter.marker,
                 nodes_ = [], subproxy, i_, node;
-            if (iter.key) orig_[iter.key] = i;
-            orig_[iter.alias] = value;
             subproxy = createProxy(traverse(clone, orig_));
             for (i_ = clone.childNodes.length; i_--; lastNode = node) {
               nodes_.unshift(node = clone.childNodes[i_]);
@@ -278,23 +285,20 @@
             return subproxy;
           };
 
-          (renders[renderId] = function(orig) {
+          (render = renders[renderId] = function(orig, ext) {
             var list = resolveProp(orig, iter.prop),
-                splen=subproxies.length,
-                ks, i, i_, len, item, sp, k;
+                splen = subproxies.length,
+                ks, i, i_, len, item, sp, spn, k;
             if (list) for (i=0, ks=keys(list), len=ks.length; i<len; i++) {
               item = list[k=ks[i]];
-              if (i < splen) {
-                sp = subproxies[i];
-                if (iter.key) sp[iter.key] = k;
-                sp[iter.alias] = item;
-              } else subproxies.push(insertNode(orig, item, k));
+              if (i < splen) subproxies[i].extend(ext||copy(orig, k, item));
+              else subproxies.push(insertNode(orig, item, k));
             }
             sps = subproxies.splice(i);
             for (i=0, len=sps.length; i<len; i++) {
               sp = sps[i];
-              spNodes = sp.__nodes;
-              for (i_=spNodes.length; i_--;) iter.parent.removeChild(spNodes[i_]);
+              spn = sp.__nodes;
+              for (i_=spn.length; i_--;) iter.parent.removeChild(spn[i_]);
             }
           })(orig);
           renders[renderId].push = function() {
@@ -304,8 +308,16 @@
                                          list.length+parseInt(i)));
           };
           bucket(binds, iter.prop.split('.')[0], renderId);
-          for (p in maps.binds) if (iter.alias.indexOf(p) === -1)
-            bucket(binds, p, renderId);
+          keys(qmatch).forEach(function(qp) {
+            if (iter.alias !== qp && iter.key !== qp) {
+              renders[renderId = count++] = function(orig) {
+                var ext = {};
+                ext[qp] = resolveProp(orig, qp);
+                render(orig, ext);
+              };
+              bucket(binds, qp, renderId);
+            }
+          });
         } else {
           // Bind node text.
           mapTextNodes(el_);
