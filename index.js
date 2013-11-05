@@ -141,7 +141,7 @@
         chains.forEach(function(chain) {
           // Register all chaining functions as binds.
           chain.forEach(function(prop) {
-            if (prop[0] === "'" || !isNaN(prop)) return;
+            if (builtins[prop] || prop[0] === "'" || !isNaN(prop)) return;
             bucket(binds, prop.split('.')[0], renderId);
           });
         });
