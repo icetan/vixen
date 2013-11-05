@@ -608,7 +608,7 @@ module.exports = function(test, jsdom) {
     t.plan(12);
     jsdom.env(
       '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
-        '<div>{{x}}</div>'+
+        '<li>{{x}}</li>'+
       '</ul></body></html>', [],
       function(err, window) {
         var body = getBody(window),
@@ -636,22 +636,55 @@ module.exports = function(test, jsdom) {
   });
 
   test('shouldn\'t request images with empty parameters', function(t) {
-    t.plan(5);
+    t.plan(7);
     jsdom.env(
-      '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
-        '<img vx-src="lol/{{x}}/apix.gif"><div>{{lol.a}}-{{lol.b}}</div>'+
-      '</ul></body></html>', [],
+      '<html><body><div id="list" vx-for="x" vx-in="ls">'+
+        '<img vx-src="lol/{{x}}/apix.gif">'+
+        '<div id="{{x}}">{{lol.a}}-{{lol.b}}</div>'+
+      '</div></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body),
             listEl = window.document.getElementById('list');
         viewModel.extend({ ls: [ 'hej', 'mfw' ] });
+        t.equal(listEl.children[1].id, 'hej');
+        t.equal(listEl.children[3].id, 'mfw');
         t.equal(/lol\/([^\/]*)\/apix.gif$/.exec(listEl.children[0].src)[1], 'hej');
         t.equal(/lol\/([^\/]*)\/apix.gif$/.exec(listEl.children[2].src)[1], 'mfw');
         t.equal(listEl.children[1].textContent, '-');
         viewModel.lol = { a:'60', b:'wat' };
         t.equal(listEl.children[1].textContent, '60-wat');
         t.equal(listEl.children[3].textContent, '60-wat');
+      }
+    );
+  });
+
+  test('should update all expressions in iterator subproxies', function(t) {
+    t.plan(8);
+    jsdom.env(
+      '<html><body><ul id="list" vx-for="x" vx-in="ls">'+
+        '<li id="{{x.a}}"><div vx-id="lol-{{x.b}}-{{x.c}}">mjau</div></li>'+
+      '</ul></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body),
+            listEl = window.document.getElementById('list');
+        viewModel.extend({ ls: [
+          { a:1, b:2, c:3 },
+          { a:4, b:5, c:6 }
+        ] });
+        t.equal(listEl.children[0].getAttribute('id'), '1');
+        t.equal(listEl.children[0].firstChild.getAttribute('id'), 'lol-2-3');
+        t.equal(listEl.children[1].getAttribute('id'), '4');
+        t.equal(listEl.children[1].firstChild.getAttribute('id'), 'lol-5-6');
+        viewModel.ls = [
+          { a:7, b:8, c:9 },
+          { a:10, b:11, c:12 }
+        ];
+        t.equal(listEl.children[0].getAttribute('id'), '7');
+        t.equal(listEl.children[0].firstChild.getAttribute('id'), 'lol-8-9');
+        t.equal(listEl.children[1].getAttribute('id'), '10');
+        t.equal(listEl.children[1].firstChild.getAttribute('id'), 'lol-11-12');
       }
     );
   });
