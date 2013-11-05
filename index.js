@@ -6,7 +6,7 @@
 }(function() {
   var pattern = /\{\{.+?\}\}/g,
       expr = /'.*?'\s*|[^ ]+\s*/g,
-      forExpr = /^\s*([^\s]+?)(?:\s*,\s*([^\s]+?))?\s+in\s+([^\s]+?)(?:\s+do\s+([^\s]+))?\s*$/,
+      forExpr = /^\s*(?:([^\s]+?)\s*:\s*)?([^\s]+?)\s+in\s+([^\s]+?)(?:\s+do\s+([^\s]+))?\s*$/,
       builtins = {
         '|': function(a, b) { return b(a); },
         '+': function(a, b) { return a + b; },
@@ -155,9 +155,10 @@
           } else return;
           if (m = forExpr.exec(forStr))
             return {
-              alias: m[1], key: m[2], prop: m[3], each: m[4], nodes: nodes,
+              key: m[1], alias: m[2], prop: m[3], each: m[4], nodes: nodes,
               parent: parent_, marker: marker
             };
+          else throw "\"" + forStr + "\" is not a valid vx-for expression";
         }
       }
 

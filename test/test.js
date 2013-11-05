@@ -76,7 +76,7 @@ module.exports = function(test, jsdom) {
   test('should iterate object keys and values in view model', function(t) {
     t.plan(2);
     jsdom.env(
-      '<html><body><vx vx-for="value,key in tests"><b>{{key}}</b>:<i>{{value}},</i></vx></body></html>', [],
+      '<html><body><vx vx-for="key:value in tests"><b>{{key}}</b>:<i>{{value}},</i></vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body);
@@ -90,7 +90,7 @@ module.exports = function(test, jsdom) {
   test('should iterate values in nested list', function(t) {
     t.plan(2);
     jsdom.env(
-      '<html><body><vx vx-for="test,i in p.tests"><i>{{i}}:{{test}},</i></vx></body></html>', [],
+      '<html><body><vx vx-for="i:test in p.tests"><i>{{i}}:{{test}},</i></vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body);
@@ -127,7 +127,7 @@ module.exports = function(test, jsdom) {
   test('should attach each element before for-each function', function(t) {
     t.plan(1*3 + 2);
     jsdom.env(
-      '<html><body><vx vx-for="test,i in tests do foeach">{{i}}: <i>{{test}}</i></vx></body></html>', [],
+      '<html><body><vx vx-for="i:test in tests do foeach">{{i}}: <i>{{test}}</i></vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body);
@@ -146,7 +146,7 @@ module.exports = function(test, jsdom) {
   test('should attach each element before for-each function with on element iterator', function(t) {
     t.plan(1*3 + 2);
     jsdom.env(
-      '<html><body><div id="test" vx-for="test,i in tests do foeach">{{i}}: <i>{{test}}</i></div></body></html>', [],
+      '<html><body><div id="test" vx-for="i:test in tests do foeach">{{i}}: <i>{{test}}</i></div></body></html>', [],
       function(err, window) {
         var div = window.document.getElementById('test'),
             viewModel = vixen(getBody(window));
@@ -162,10 +162,38 @@ module.exports = function(test, jsdom) {
     );
   });
 
+  test('should throw exception if vx-for is present but malformed', function(t) {
+    t.plan(4);
+    jsdom.env(
+      '<html><body><div id="test" vx-for="i:test in tests do ">{{test}}</body></html>', [],
+      function(err, window) {
+        t.throws(function() { vixen(getBody(window)); });
+      }
+    );
+    jsdom.env(
+      '<html><body><div id="test" vx-for="testin tests">{{test}}</body></html>', [],
+      function(err, window) {
+        t.throws(function() { vixen(getBody(window)); });
+      }
+    );
+    jsdom.env(
+      '<html><body><div id="test" vx-for="test in">{{test}}</body></html>', [],
+      function(err, window) {
+        t.throws(function() { vixen(getBody(window)); });
+      }
+    );
+    jsdom.env(
+      '<html><body><div id="test" vx-for="x y in stuff">{{x}}</body></html>', [],
+      function(err, window) {
+        t.throws(function() { vixen(getBody(window)); });
+      }
+    );
+  });
+
   test('should iterate over new style iterator and re-iterate without traces', function(t) {
     t.plan(2);
     jsdom.env(
-      '<html><body>before<vx vx-for=" val , i  in  stuff ">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
+      '<html><body>before<vx vx-for=" i :  val  in  stuff ">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body).extend({
@@ -181,7 +209,7 @@ module.exports = function(test, jsdom) {
   test('should create elements inside <select>', function(t) {
     t.plan(3);
     jsdom.env(
-      '<html><body><select id="test" value="{{sel}}" vx-for="val,i in stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
+      '<html><body><select id="test" value="{{sel}}" vx-for="i:val in stuff"><option value="{{i}}">{{val}}</select></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             select = window.document.getElementById('test'),
@@ -206,7 +234,7 @@ module.exports = function(test, jsdom) {
   test('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function(t) {
     t.plan(3);
     jsdom.env(
-      '<html><body><vx vx-for="thing,i in stuff">{{i}}:<i id="thing-{{i}}" onclick="{{thing.on}}">{{thing.id}}</i>,</vx></body></html>', [],
+      '<html><body><vx vx-for="i: thing in stuff">{{i}}:<i id="thing-{{i}}" onclick="{{thing.on}}">{{thing.id}}</i>,</vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             evt = window.document.createEvent("HTMLEvents"),
@@ -241,7 +269,7 @@ module.exports = function(test, jsdom) {
   test('should push/unshift item to rendered iterator witout rerendering each item', function(t) {
     t.plan(5);
     jsdom.env(
-      '<html><body>before<vx vx-for="val,i in stuff">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
+      '<html><body>before<vx vx-for="i:val in stuff">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body).extend({
@@ -331,7 +359,7 @@ module.exports = function(test, jsdom) {
   test('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function(t) {
     t.plan(3);
     jsdom.env(
-      '<html><body><vx vx-for="x,i in stuff"><i id="thing-{{i}}" onclick="{{doz x}}">{{x.id}}</i>,</vx></body></html>', [],
+      '<html><body><vx vx-for="i:x in stuff"><i id="thing-{{i}}" onclick="{{doz x}}">{{x.id}}</i>,</vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             evt = window.document.createEvent("HTMLEvents"),
@@ -534,7 +562,7 @@ module.exports = function(test, jsdom) {
   test('should not call chaining functions with empty values or unnecessarily in iterators', function(t) {
     t.plan(2 + 3);
     jsdom.env(
-      '<html><body><vx vx-for="thing, i in stuff"><div class="{{i | alt}}">{{thing}}</div></vx></body></html>', [],
+      '<html><body><vx vx-for=" i :thing in stuff"><div class="{{i | alt}}">{{thing}}</div></vx></body></html>', [],
       function(err, window) {
         var body = getBody(window),
             viewModel = vixen(body, {
