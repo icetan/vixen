@@ -14,6 +14,7 @@
         '/': function(a, b) { return a / b; },
         '%': function(a, b) { return a % b; },
         'is': function(a, b) { return a == b; },
+        'isnt': function(a, b) { return a != b; },
         'then': function(a, b) { return a ? b : a; },
         'else': function(a, b) { return a ? a : b; }
       },
