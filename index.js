@@ -174,23 +174,26 @@
             name = name.substr(3);
           }
           if (name.indexOf('on') === 0) {
-            renderId = -1; // No renderer
             eventName = name.substr(2);
             // Add event listeners
             chains.forEach(function(chain) {
-              // Multi parameter space syntax
-              owner.addEventListener(eventName, function(evt) {
+              var cb;
+              (renders[renderId=count++] = function(orig) {
                 var args = chain.map(resolveProp.bind(null, orig));
-                return args[0].apply(owner, [evt].concat(args.slice(1)));
-              });
+                // Multi parameter space syntax
+                cb = function(evt) {
+                  return args[0].apply(owner, [evt].concat(args.slice(1)));
+                };
+              })(orig);
+              owner.addEventListener(eventName, function(e) { cb(e); });
+              bindRenders([chain], renderId);
             });
             owner.removeAttribute(name);
           } else {
             noTmpl = chains.length === 1 && str.substr(0,1) === '{' &&
               str.substr(-1) === '}';
             // Create rendering function for attribute.
-            renderId = count++;
-            (renders[renderId] = function(orig, clear) {
+            (renders[renderId=count++] = function(orig, clear) {
               var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
               !clear && name in owner ? owner[name] = val :
                 owner.setAttribute(name, val);
@@ -205,8 +208,8 @@
                 return name in owner ?
                   owner[name] : owner.getAttribute(name);
               };
+            bindRenders(chains, renderId);
           }
-          bindRenders(chains, renderId);
         }
       }
 
@@ -229,14 +232,13 @@
       el.removeAttribute('vx-subview');
 
       traverseElements(el, function(el_) {
-        var i, iter, template, nodes, renderId, insertNode, subproxies,
-            qmatch, qp, copy, render;
+        var i, iter, template, renderId, insertNodes, subproxies, addkv,
+            qmatch, qp, render;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('vx-subview') !== null) return false;
 
         if (iter = parseIterator(el_)) {
-          nodes = iter.nodes;
           subproxies = [];
           template = el_.cloneNode(true);
           renderId = count++;
@@ -244,44 +246,39 @@
           match(template.innerHTML).forEach(function(c) {
             c.forEach(function(p) { qmatch[p.split('.')[0]] = true; });
           });
-          copy = function(orig, i, v) {
-            var orig_ = extend({}, orig);
-            if (iter.key) orig_[iter.key] = i;
-            orig_[iter.alias] = v;
-            return orig_;
+          addkv = function(orig, k, v) {
+            if (iter.key) orig[iter.key] = k;
+            orig[iter.alias] = v;
           };
 
-          for (i = nodes.length; i--;) iter.parent.removeChild(nodes[i]);
+          for (i=iter.nodes.length; i--;)
+            iter.parent.removeChild(iter.nodes[i]);
 
-          insertNode = function(orig, value, i){
-            var orig_ = copy(orig, i, value),
-                clone = template.cloneNode(true),
-                each_ = iter.each && resolveProp(orig, iter.each),
-                lastNode = iter.marker,
-                nodes_ = [], subproxy, i_, len;
-            subproxy = createProxy(traverse(clone, orig_));
-            nodes_ = [].slice.call(clone.childNodes);
-            for (i_=0, len=nodes_.length; i_<len; i_++) {
-              iter.parent.insertBefore(nodes_[i_], lastNode);
-            }
-            if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
-              return n.nodeType === el_.ELEMENT_NODE;
-            })) != null) {
-              for (i_ = nodes_.length; i_--;)
-                iter.parent.removeChild(nodes_[i_]);
-            }
-            subproxy.__nodes = nodes_;
+          insertNodes = function(orig, each) {
+            var clone = template.cloneNode(true),
+                subproxy = createProxy(traverse(clone, orig)),
+                nodes = Array.prototype.slice.call(clone.childNodes);
+            for (i=0, len=nodes.length; i<len; i++)
+              iter.parent.insertBefore(nodes[i], iter.marker);
+            if (each) each(nodes);
+            subproxy.__nodes = nodes;
             return subproxy;
           };
 
           (render = renders[renderId] = function(orig, ext) {
             var list = resolveProp(orig, iter.prop),
+                each = iter.each && resolveProp(orig, iter.each),
                 splen = subproxies.length,
                 ks, i, i_, len, item, sp, spn, k;
-            if (list) for (i=0, ks=keys(list), len=ks.length; i<len; i++) {
-              item = list[k=ks[i]];
-              if (i < splen) subproxies[i].extend(ext||copy(orig, k, item));
-              else subproxies.push(insertNode(orig, item, k));
+            if (list) {
+              if (ext) orig = ext;
+              for (i=0, ks=keys(list), len=ks.length; i<len; i++) {
+                item = list[k=ks[i]];
+                addkv(orig, k, item);
+                if (i < splen) subproxies[i].extend(orig);
+                else subproxies.push(insertNodes(orig,
+                  each && each.bind(null, item, k)));
+              }
             }
             sps = subproxies.splice(i);
             for (i=0, len=sps.length; i<len; i++) {
@@ -291,10 +288,17 @@
             }
           })(orig);
           renders[renderId].push = function() {
-            var list = resolveProp(orig, iter.prop);
-            for (i in arguments)
-              subproxies.push(insertNode(orig, arguments[i],
-                                         list.length+parseInt(i)));
+            var list = resolveProp(orig, iter.prop),
+                each = iter.each && resolveProp(orig, iter.each),
+                lslen = list.length,
+                i, len, k, v;
+            for (i=0, len=arguments.length; i<len; i++) {
+              k = lslen + i;
+              v = arguments[i];
+              addkv(orig, k, v);
+              subproxies.push(insertNodes(orig,
+                each && each.bind(null, v, k)));
+            }
           };
           bucket(binds, iter.prop.split('.')[0], renderId);
           keys(qmatch).forEach(function(qp) {

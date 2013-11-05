@@ -116,7 +116,7 @@ module.exports = function(test, jsdom) {
     );
   });
 
-  test('should execute for-each function specified by vx-each attribute and filter', function(t) {
+  test('should execute for-each function specified by vx-each attribute', function(t) {
     t.plan(4*3 + 2);
     jsdom.env(
       '<html><body><vx vx-each="foeach" vx-for="test" vx-in="tests"><i>{{test}}</i></vx></body></html>', [],
@@ -125,22 +125,21 @@ module.exports = function(test, jsdom) {
             viewModel = vixen(body),
             count = 0;
         viewModel.extend({
-          foeach: function(value, i, context, els) {
-            t.ok(els instanceof Array);
-            t.ok(els[0] instanceof window.HTMLElement);
+          foeach: function(value, i, nodes) {
+            t.ok(nodes instanceof Array);
+            t.ok(nodes[0] instanceof window.HTMLElement);
             t.equal(typeof value, 'string');
             t.equal(i, ''+count++);
-            if (value === 'rofl') return false;
           },
           tests: ['lol', 'rofl', 'omg']
         });
-        t.equal(body.children.length, 2);
-        t.equal(body.textContent, 'lolomg');
+        t.equal(body.children.length, 3);
+        t.equal(body.textContent, 'lolroflomg');
       }
     );
   });
 
-  test('should attach each element before for-each function and remove after if filtered', function(t) {
+  test('should attach each element before for-each function', function(t) {
     t.plan(1*3 + 2);
     jsdom.env(
       '<html><body><vx vx-each="foeach" vx-for="test" vx-i="i" vx-in="tests">{{i}}: <i>{{test}}</i></vx></body></html>', [],
@@ -148,19 +147,18 @@ module.exports = function(test, jsdom) {
         var body = getBody(window),
             viewModel = vixen(body);
         viewModel.extend({
-          foeach: function(value, i, context, els) {
-            t.ok(els[0].parentNode);
-            if (value === 'rofl') return false;
+          foeach: function(value, i, nodes) {
+            t.ok(nodes[0].parentNode);
           },
           tests: ['lol', 'rofl', 'omg']
         });
-        t.equal(body.children.length, 2);
-        t.equal(body.textContent, '0: lol2: omg');
+        t.equal(body.children.length, 3);
+        t.equal(body.textContent, '0: lol1: rofl2: omg');
       }
     );
   });
 
-  test('should attach each element before for-each function and remove after if filtered with on element iterator', function(t) {
+  test('should attach each element before for-each function with on element iterator', function(t) {
     t.plan(1*3 + 2);
     jsdom.env(
       '<html><body><div id="test" vx-each="foeach" vx-for="test" vx-i="i" vx-in="tests">{{i}}: <i>{{test}}</i></div></body></html>', [],
@@ -168,14 +166,13 @@ module.exports = function(test, jsdom) {
         var div = window.document.getElementById('test'),
             viewModel = vixen(getBody(window));
         viewModel.extend({
-          foeach: function(value, i, context, els) {
-            t.ok(els[0].parentNode);
-            if (value === 'rofl') return false;
+          foeach: function(value, i, nodes) {
+            t.ok(nodes[0].parentNode);
           },
           tests: ['lol', 'rofl', 'omg']
         });
-        t.equal(div.children.length, 2);
-        t.equal(div.textContent, '0: lol2: omg');
+        t.equal(div.children.length, 3);
+        t.equal(div.textContent, '0: lol1: rofl2: omg');
       }
     );
   });
@@ -228,8 +225,6 @@ module.exports = function(test, jsdom) {
       function(err, window) {
         var body = getBody(window),
             evt = window.document.createEvent("HTMLEvents"),
-            count = 1,
-            result = 1,
             viewModel = vixen(body).extend({
               stuff: [
                 {
@@ -285,13 +280,14 @@ module.exports = function(test, jsdom) {
       function(err, window) {
         var viewModel = vixen(getBody(window)),
             div = window.document.getElementById('test'),
-            evt = window.document.createEvent("HTMLEvents");
-        viewModel.handler = function() {
+            evt = window.document.createEvent("HTMLEvents"),
+            handler = function() {
+              t.ok(true);
+            };
+        handler.extra = function() {
           t.ok(true);
         };
-        viewModel.handler.extra = function() {
-          t.ok(true);
-        };
+        viewModel.handler = handler;
         t.doesNotThrow(function() {
           var err;
           evt.initEvent('click', true, true);
@@ -345,7 +341,35 @@ module.exports = function(test, jsdom) {
         });
       }
     );
-  });
+  })
+
+  test('should keep each iterated item in it\'s render scope so handlers are mapped correctly', function(t) {
+    t.plan(3);
+    jsdom.env(
+      '<html><body><vx vx-for="x" vx-i vx-in="stuff"><i id="thing-{{i}}" onclick="{{doz x}}">{{x.id}}</i>,</vx></body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            evt = window.document.createEvent("HTMLEvents"),
+            viewModel = vixen(body).extend({
+              doz: function(e, x) {
+                t.equal(x.id, 'first');
+              },
+              stuff: [
+                { id: 'first', },
+                { id: 'second' }
+              ]
+            }),
+            first = window.document.getElementById('thing-0'),
+            second = window.document.getElementById('thing-1');
+        t.equal(body.textContent, 'first,second,');
+        t.doesNotThrow(function() {
+          var err;
+          evt.initEvent('click', true, true);
+          first.dispatchEvent(evt);
+        });
+      }
+    );
+  });;
 
   test('should chain values through functions', function(t) {
     t.plan(2);
