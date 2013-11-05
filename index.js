@@ -6,6 +6,7 @@
 }(function() {
   var pattern = /\{\{.+?\}\}/g,
       expr = /'.*?'\s*|[^ ]+\s*/g,
+      forExpr = /^\s*([^\s]+?)(?:\s*,\s*([^\s]+?))?\s+in\s+([^\s]+?)(?:\s+do\s+([^\s]+))?\s*$/,
       builtins = {
         '|': function(a, b) { return b(a); },
         '+': function(a, b) { return a + b; },
@@ -140,28 +141,23 @@
       }
 
       function parseIterator(el) {
-        var marker, key, nodes = [];
+        var nodes = [], marker, key, forStr;
         if (parent_ = (el.parentElement || el.parentNode)) {
+          forStr = el.getAttribute('vx-for');
           if (el.tagName === 'VX') {
             marker = el.ownerDocument.createTextNode('');
             parent_.replaceChild(marker, el);
-          } else if (el.getAttribute('vx-in')) {
+          } else if (forStr) {
             parent_ = el;
             nodes = Array.prototype.slice.call(el.childNodes);
             marker = el.ownerDocument.createTextNode('');
             parent_.appendChild(marker);
           } else return;
-          return {
-            alias: el.getAttribute('vx-for'),
-            key: el.hasAttribute('vx-i')
-              ? (((key = el.getAttribute('vx-i')) === 'vx-i') ? 'i' : key||'i')
-              : undefined,
-            prop: el.getAttribute('vx-in'),
-            each: el.getAttribute('vx-each'),
-            nodes: nodes,
-            parent: parent_,
-            marker: marker
-          };
+          if (m = forExpr.exec(forStr))
+            return {
+              alias: m[1], key: m[2], prop: m[3], each: m[4], nodes: nodes,
+              parent: parent_, marker: marker
+            };
         }
       }
 
