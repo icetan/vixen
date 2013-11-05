@@ -59,11 +59,8 @@
 
   function traverseElements(el, callback) {
     var i;
-    if (callback(el) !== false) {
-      for(i = el.children.length; i--;) (function(node) {
-        traverseElements(node, callback);
-      })(el.children[i]);
-    }
+    if (callback(el) !== false) for(i = el.children.length; i--;)
+      traverseElements(el.children[i], callback);
   }
 
   function createProxy(maps, proxy) {
