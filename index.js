@@ -66,11 +66,11 @@
   function createProxy(maps, proxy) {
     proxy = proxy || {};
     proxy.extend = function(obj) {
-      var toRender = {};
+      var toRender = {}, rid;
       Object.keys(obj).forEach(function(prop) {
         maps.orig[prop] = obj[prop];
-        if (maps.binds[prop]) maps.binds[prop].forEach(function(renderId) {
-          if (renderId >= 0) toRender[renderId] = null;
+        if (maps.binds[prop]) maps.binds[prop].forEach(function(rid) {
+          if (rid >= 0) toRender[rid] = null;
         });
       });
       for (renderId in toRender) maps.renders[renderId](maps.orig);
