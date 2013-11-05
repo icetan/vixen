@@ -47,7 +47,7 @@
 
   function bucket(b, k, v) {
     if (!(k in b)) b[k] = [];
-    if (!(v in b[k])) b[k].push(v);
+    if (b[k].indexOf(v) === -1) b[k].push(v);
   }
 
   function extend(orig, obj) {
