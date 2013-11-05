@@ -32,9 +32,12 @@
   }
 
   function resolveInFix(obj, props) {
-    var p = resolveProp(obj, props[0]), i, len;
-    for (i=1, len=props.length; i<len; i+=2)
-      p = resolveProp(obj, props[i])(p, resolveProp(obj, props[i+1]));
+    var p = resolveProp(obj, props[0]), i, len, prop, infix;
+    for (i=1, len=props.length; i<len; i+=2) {
+      prop = props[i].trim();
+      infix = builtins[prop] || resolveProp(obj, prop);
+      p = infix(p, resolveProp(obj, props[i+1]));
+    }
     return p;
   }
 
@@ -124,10 +127,6 @@
           rebinds = {},
           renders = {},
           count = 0;
-
-      if (orig) Object.keys(builtins).forEach(function(prop) {
-        if (!(prop in orig)) orig[prop] = builtins[prop];
-      });
 
       function bindRenders(chains, renderId) {
         // Create property to render mapping
