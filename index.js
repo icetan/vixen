@@ -266,11 +266,11 @@
                 clone = template.cloneNode(true),
                 each_ = iter.each && resolveProp(orig, iter.each),
                 lastNode = iter.marker,
-                nodes_ = [], subproxy, i_, node;
+                nodes_ = [], subproxy, i_, len;
             subproxy = createProxy(traverse(clone, orig_));
-            for (i_ = clone.childNodes.length; i_--; lastNode = node) {
-              nodes_.unshift(node = clone.childNodes[i_]);
-              iter.parent.insertBefore(node, lastNode);
+            nodes_ = [].slice.call(clone.childNodes);
+            for (i_=0, len=nodes_.length; i_<len; i_++) {
+              iter.parent.insertBefore(nodes_[i_], lastNode);
             }
             if (each_ && each_(value, i, orig_, nodes_.filter(function(n) {
               return n.nodeType === el_.ELEMENT_NODE;
