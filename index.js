@@ -31,14 +31,6 @@
     }, obj);
   }
 
-  function resolveChain(obj, chain) {
-    var prop = chain.shift();
-    return chain.reduce(function(p, prop) {
-      var f = resolveProp(obj, prop);
-      return f ? f(p) : p;
-    }, resolveProp(obj, prop));
-  }
-
   function resolveInFix(obj, props) {
     var p = resolveProp(obj, props[0]), i, len;
     for (i=1, len=props.length; i<len; i+=2)
