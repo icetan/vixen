@@ -6,7 +6,7 @@ Vixen
 
 Minimal string/DOM templating hybrid developed for use with node-webkit.
 
-Only ~7.3kb and ~1.5kb minified+gzip.
+Only ~11kb and ~2.5kb minified+gzip.
 
 Example usage
 -------------
@@ -16,7 +16,7 @@ Example usage
   <h1>I'm {{me.name}}</h1>
 
   <h2>And I like</h2>
-  <ul vx-for="like" vx-i vx-in="me.likes">
+  <ul vx-for="i:like in me.likes">
     <li class="{{i | alt}}">{{like}}</li>
   </ul>
 
