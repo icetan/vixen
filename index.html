@@ -81,7 +81,7 @@
   <h1>I'm {{me.name}}</h1>
 
   <h2>and I like</h2>
-  <ul vx-for="like" vx-i="index" vx-in="me.likes">
+  <ul vx-for="index:like in me.likes">
     <li class="{{index | alt}}"><a href="{{like.url}}">{{like.text}}</a></li>
   </ul>
 
