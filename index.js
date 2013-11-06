@@ -32,16 +32,6 @@
     }, obj);
   }
 
-  function resolveInFix(obj, props) {
-    var p = resolveProp(obj, props[0]), i, len, prop, infix;
-    for (i=1, len=props.length; i<len; i+=2) {
-      prop = props[i].trim();
-      infix = builtins[prop] || resolveProp(obj, prop);
-      p = infix(p, resolveProp(obj, props[i+1]));
-    }
-    return p;
-  }
-
   function bucket(b, k, v) {
     if (!(k in b)) b[k] = [];
     if (b[k].indexOf(v) === -1) b[k].push(v);
@@ -105,7 +95,17 @@
     return proxy;
   }
 
-  return function(el, model) {
+  function vixen(builtins, el, model) {
+    function resolveInFix(obj, props) {
+      var p = resolveProp(obj, props[0]), i, len, prop, infix;
+      for (i=1, len=props.length; i<len; i+=2) {
+        prop = props[i].trim();
+        infix = builtins[prop] || resolveProp(obj, prop);
+        p = infix(p, resolveProp(obj, props[i+1]));
+      }
+      return p;
+    }
+
     function resolve(orig, prop) {
       if (!orig) return '';
       var val = resolveInFix(orig, prop.slice(2,-2).match(expr));
@@ -321,5 +321,16 @@
       return {orig:orig, binds:binds, rebinds:rebinds, renders:renders};
     }
     return createProxy(traverse(el, extend({}, model || {})), model);
-  };
+  }
+
+  function factory() {
+    var builtins_ = (arguments.length ? [].slice.call(arguments) : [builtins])
+          .reduce(function(p, c) { return extend(p, c); }, {}),
+        vixen_ = vixen.bind(null, builtins_);
+    vixen_.builtins = builtins_;
+    vixen_.factory = factory;
+    return vixen_;
+  }
+
+  return factory();
 }());
