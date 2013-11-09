@@ -1,6 +1,6 @@
 {
   "name": "vixen",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Minimal string/DOM templating.",
   "author": "Christopher Fredén <c.freden@gmail.com>",
   "repository": {
