@@ -1,8 +1,15 @@
 !function(obj) {
-  if (typeof module !== 'undefined')
+  var originalVixen;
+  if (typeof module !== 'undefined') {
     module.exports = obj;
-  else
+  } else {
+    originalVixen = window.vixen;
+    obj.noConflict = function() {
+      window.vixen = originalVixen;
+      return obj;
+    };
     window.vixen = obj;
+  }
 }(function() {
   var pattern = /\{\{.+?\}\}/g,
       expr = /'.*?'\s*|[^ ]+\s*/g,
