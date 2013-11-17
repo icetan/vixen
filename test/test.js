@@ -726,4 +726,28 @@ module.exports = function(test, jsdom) {
       }
     );
   });
+
+  test('should splice list', function(t) {
+    t.plan(11);
+    jsdom.env(
+      '<html><body>(start)<vx vx-for="x in stuff ">{{x}},</vx>(end)</body></html>', [],
+      function(err, window) {
+        var body = getBody(window),
+            viewModel = vixen(body).extend({
+              stuff: [1,2,3,4,5]
+            });
+        t.equal(body.textContent, '(start)1,2,3,4,5,(end)');
+        t.deepEqual(viewModel.splice('stuff', 0, 3), [1,2,3]);
+        t.equal(body.textContent, '(start)4,5,(end)');
+        t.deepEqual(viewModel.splice('stuff', 1, 0, 4.1, 4.2, 4.3, 4.4), []);
+        t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,5,(end)');
+        t.deepEqual(viewModel.splice('stuff'), []);
+        t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,5,(end)');
+        t.deepEqual(viewModel.splice('stuff', 5, 10, 4.5, 4.6, 4.7), [5]);
+        t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,4.5,4.6,4.7,(end)');
+        t.deepEqual(viewModel.splice('stuff', 0), [4,4.1,4.2,4.3,4.4,4.5,4.6,4.7]);
+        t.equal(body.textContent, '(start)(end)');
+      }
+    );
+  });
 };

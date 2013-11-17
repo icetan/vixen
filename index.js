@@ -75,6 +75,21 @@
       });
       return list.push.apply(list, args);
     };
+    // TODO: clean this mess, maybe replace push with splice.
+    proxy.splice = function(prop, start, end) {
+      if (arguments.length < 2) return [];
+      var list = resolveProp(maps.orig, prop),
+          middle, args, res;
+      if (!list) return;
+      args = [].slice.call(arguments, 1);
+      middle = Math.max(0, args.length-2);
+      res = list.splice.apply(list, args);
+      maps.binds[prop].forEach(function(rId) {
+        if (rId < 0) return;
+        maps.renders[rId].splice(start, end, middle);
+      });
+      return res;
+    };
 
     Object.keys(maps.binds).forEach(function(prop) {
       var ids = maps.binds[prop];
@@ -251,40 +266,58 @@
           for (i=iter.nodes.length; i--;)
             iter.parent.removeChild(iter.nodes[i]);
 
-          insertNodes = function(orig, each) {
+          insertNodes = function(orig, each, marker) {
             var clone = template.cloneNode(true),
                 subproxy = createProxy(traverse(clone, orig)),
                 nodes = Array.prototype.slice.call(clone.childNodes);
             for (i=0, len=nodes.length; i<len; i++)
-              iter.parent.insertBefore(nodes[i], iter.marker);
+              iter.parent.insertBefore(nodes[i], marker || iter.marker);
             if (each) each(nodes);
             subproxy.__nodes = nodes;
             return subproxy;
           };
 
-          (render = renders[renderId] = function(orig, ext) {
+          // TODO: clean up this function
+          function splice(orig, ext, start, end, middle) {
             var list = resolveProp(orig, iter.prop),
                 each = iter.each && resolveProp(orig, iter.each),
                 splen = subproxies.length,
-                ks, i, i_, len, item, sp, spn, k;
+                ks, klen, i, i_, len, item, sp, spn, k;
+            if (start == null) start = 0;
             if (list) {
+              ks=keys(list);
+              klen=ks.length;
+              if (middle == null) middle = klen;
+              len = start + middle;
               if (ext) orig = ext;
-              for (i=0, ks=keys(list), len=ks.length; i<len; i++) {
+              for (i=start; i<len; i++) {
                 item = list[k=ks[i]];
                 addkv(orig, k, item);
-                if (i < splen) subproxies[i].extend(orig);
+                if (i-start >= end)
+                  subproxies.splice(i,0,insertNodes(orig,
+                    each && each.bind(null, item, k), subproxies[i].__nodes[0]));
+                else if (i < splen) subproxies[i].extend(orig);
                 else subproxies.push(insertNodes(orig,
                   each && each.bind(null, item, k)));
               }
             }
-            sps = subproxies.splice(i);
+            if (end == null) end = subproxies.length-start;
+            sps = subproxies.splice(i, end-(i-start));
             for (i=0, len=sps.length; i<len; i++) {
               sp = sps[i];
               spn = sp.__nodes;
               for (i_=spn.length; i_--;) iter.parent.removeChild(spn[i_]);
             }
+          }
+
+          (render = renders[renderId] = function(orig, ext) {
+            splice(orig, ext, 0);
           })(orig);
-          renders[renderId].push = function() {
+          render.splice = function(start, end, middle) {
+            splice(orig, undefined, start, end, middle);
+          };
+          // TODO: replace push with splice maybe
+          render.push = function() {
             var list = resolveProp(orig, iter.prop),
                 each = iter.each && resolveProp(orig, iter.each),
                 lslen = list.length,
