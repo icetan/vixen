@@ -86,7 +86,8 @@
       res = list.splice.apply(list, args);
       maps.binds[prop].forEach(function(rId) {
         if (rId < 0) return;
-        maps.renders[rId].splice(start, end, middle);
+        var render = maps.renders[rId];
+        if (render.splice) render.splice(start, end, middle);
       });
       return res;
     };
