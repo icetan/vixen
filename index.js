@@ -281,7 +281,6 @@
             return subproxy;
           };
 
-          // TODO: clean up this function
           function splice(orig, ext, start, end, middle) {
             var list = resolveProp(orig, iter.prop),
                 each = iter.each && resolveProp(orig, iter.each),
@@ -292,16 +291,24 @@
             if (list) {
               ks=keys(list);
               klen=ks.length;
-              if (middle == null) middle = klen;
-              len = start + middle;
+              if (middle == null) middle = klen-start;
+              // TODO: Set len to list.length and update index/key for all
+              // items after start. i >= splen && iter.key then addkv(orig, k), extend
+              len = iter.key ? klen : start + middle;
               if (ext) orig = ext;
               for (i=start; i<len; i++) {
                 item = list[k=ks[i]];
-                addkv(orig, k, item);
-                if (i < splen && i < end) subproxies[i].extend(orig);
-                else subproxies.splice(i, 0, insertNodes(orig,
-                  each && each.bind(null, item, k),
-                  subproxies[i] && subproxies[i].__nodes[0]));
+                if (i < splen && i < end) {
+                  var orig_ = {};
+                  if (i<start+middle) orig_[iter.alias] = item;
+                  if (iter.key) orig_[iter.key] = k;
+                  subproxies[i].extend(orig_);
+                } else {
+                  addkv(orig, k, item);
+                  subproxies.splice(i, 0, insertNodes(orig,
+                    each && each.bind(null, item, k),
+                    subproxies[i] && subproxies[i].__nodes[0]));
+                }
               }
             }
             sps = subproxies.splice(i, end-i);
