@@ -267,7 +267,7 @@ module.exports = function(test, jsdom) {
   });
 
   test('should push/unshift item to rendered iterator witout rerendering each item', function(t) {
-    t.plan(5);
+    t.plan(8);
     jsdom.env(
       '<html><body>before<vx vx-for="i:val in stuff">{{i}}:<i>{{val}}</i>,</vx>after</body></html>', [],
       function(err, window) {
@@ -277,9 +277,12 @@ module.exports = function(test, jsdom) {
             });
         t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,after');
         viewModel.stuff[1] = 105;
-        t.equal(viewModel.push('stuff', 13), 5);
+        t.equal(viewModel.$push('stuff', 13), 5);
         t.deepEqual(viewModel.stuff, [3, 105, 1, 2, 13]);
         t.equal(body.textContent, 'before0:3,1:5,2:1,3:2,4:13,after');
+        t.equal(viewModel.$unshift('stuff', -1), 6);
+        t.deepEqual(viewModel.stuff, [-1, 3, 105, 1, 2, 13]);
+        t.equal(body.textContent, 'before0:-1,1:3,2:5,3:1,4:2,5:13,after');
         viewModel.stuff = [1,2,3];
         t.equal(body.textContent, 'before0:1,1:2,2:3,after');
       }
@@ -737,15 +740,15 @@ module.exports = function(test, jsdom) {
               stuff: [1,2,3,4,5]
             });
         t.equal(body.textContent, '(start)1,2,3,4,5,(end)');
-        t.deepEqual(viewModel.splice('stuff', 0, 3), [1,2,3]);
+        t.deepEqual(viewModel.$splice('stuff', 0, 3), [1,2,3]);
         t.equal(body.textContent, '(start)4,5,(end)');
-        t.deepEqual(viewModel.splice('stuff', 1, 0, 4.1, 4.2, 4.3, 4.4), []);
+        t.deepEqual(viewModel.$splice('stuff', 1, 0, 4.1, 4.2, 4.3, 4.4), []);
         t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,5,(end)');
-        t.deepEqual(viewModel.splice('stuff'), []);
+        t.deepEqual(viewModel.$splice('stuff'), []);
         t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,5,(end)');
-        t.deepEqual(viewModel.splice('stuff', 5, 10, 4.5, 4.6, 4.7), [5]);
+        t.deepEqual(viewModel.$splice('stuff', 5, 10, 4.5, 4.6, 4.7), [5]);
         t.equal(body.textContent, '(start)4,4.1,4.2,4.3,4.4,4.5,4.6,4.7,(end)');
-        t.deepEqual(viewModel.splice('stuff', 0), [4,4.1,4.2,4.3,4.4,4.5,4.6,4.7]);
+        t.deepEqual(viewModel.$splice('stuff', 0), [4,4.1,4.2,4.3,4.4,4.5,4.6,4.7]);
         t.equal(body.textContent, '(start)(end)');
       }
     );

@@ -52,7 +52,7 @@
 
   function createProxy(maps, proxy) {
     proxy = proxy || {};
-    proxy.extend = function(obj) {
+    proxy.extend = proxy.$extend = function(obj) {
       var toRender = {}, rid;
       Object.keys(obj).forEach(function(prop) {
         maps.orig[prop] = obj[prop];
@@ -63,8 +63,7 @@
       for (renderId in toRender) maps.renders[renderId](maps.orig);
       return proxy;
     };
-    // TODO: clean this mess, maybe replace push with splice.
-    proxy.splice = function(prop, start, end) {
+    proxy.$splice = function(prop, start, end) {
       if (arguments.length < 2) return [];
       var list = resolveProp(maps.orig, prop),
           middle, args, res;
@@ -79,16 +78,21 @@
       });
       return res;
     };
-    proxy.push = function(prop, item) {
-      var list = resolveProp(maps.orig, prop);
-      return proxy.splice(prop, list.length, 0, item);
+    proxy.$push = function(prop) {
+      var list = resolveProp(maps.orig, prop),
+          items = [].slice.call(arguments, 1);
+      proxy.$splice.apply(proxy, [prop, list.length, 0].concat(items));
+      return list.length;
     };
-    proxy.unshift = function(prop, item) {
-      return proxy.splice(prop, 0, 0, item);
-    };
-    proxy.replace = function(prop, a, b) {
+    proxy.$unshift = function(prop, item) {
       var list = resolveProp(maps.orig, prop);
-      return proxy.splice(prop, list.indexOf(a), 1, b || a);
+      proxy.$splice(prop, 0, 0, item);
+      return list.length;
+    };
+    proxy.$replace = function(prop, a, b) {
+      var list = resolveProp(maps.orig, prop);
+      proxy.$splice(prop, list.indexOf(a), 1, b || a);
+      return a;
     };
 
     Object.keys(maps.binds).forEach(function(prop) {
@@ -284,6 +288,7 @@
                 splen = subproxies.length,
                 ks, klen, i, i_, len, item, sp, spn, k;
             if (start == null) start = 0;
+            if (end == null || isNaN(end)) end = splen;
             if (list) {
               ks=keys(list);
               klen=ks.length;
@@ -293,16 +298,13 @@
               for (i=start; i<len; i++) {
                 item = list[k=ks[i]];
                 addkv(orig, k, item);
-                if (i-start >= end)
-                  subproxies.splice(i,0,insertNodes(orig,
-                    each && each.bind(null, item, k), subproxies[i].__nodes[0]));
-                else if (i < splen) subproxies[i].extend(orig);
-                else subproxies.push(insertNodes(orig,
-                  each && each.bind(null, item, k)));
+                if (i < splen && i < end) subproxies[i].extend(orig);
+                else subproxies.splice(i, 0, insertNodes(orig,
+                  each && each.bind(null, item, k),
+                  subproxies[i] && subproxies[i].__nodes[0]));
               }
             }
-            if (end == null) end = subproxies.length-start;
-            sps = subproxies.splice(i, end-(i-start));
+            sps = subproxies.splice(i, end-i);
             for (i=0, len=sps.length; i<len; i++) {
               sp = sps[i];
               spn = sp.__nodes;
@@ -310,11 +312,9 @@
             }
           }
 
-          (render = renders[renderId] = function(orig, ext) {
-            splice(orig, ext, 0);
-          })(orig);
-          render.splice = function(start, end, middle) {
-            splice(orig, undefined, start, end, middle);
+          (renders[renderId] = splice)(orig);
+          splice.splice = function(start, end, middle) {
+            splice(orig, undefined, start, end+start, middle);
           };
           bucket(binds, iter.prop.split('.')[0], renderId);
           keys(qmatch).forEach(function(qp) {
@@ -322,7 +322,7 @@
               renders[renderId = count++] = function(orig) {
                 var ext = {};
                 ext[qp] = resolveProp(orig, qp);
-                render(orig, ext);
+                splice(orig, ext);
               };
               bucket(binds, qp, renderId);
             }
