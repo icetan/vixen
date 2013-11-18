@@ -63,18 +63,6 @@
       for (renderId in toRender) maps.renders[renderId](maps.orig);
       return proxy;
     };
-    // Map Array functions to iterator renderer functions.
-    proxy.push = function(prop) {
-      var list = resolveProp(maps.orig, prop), args, render;
-      if (!list) return;
-      args = [].slice.call(arguments, 1);
-      maps.binds[prop].forEach(function(rId) {
-        if (rId < 0) return;
-        render = maps.renders[rId];
-        render.push.apply(render, args);
-      });
-      return list.push.apply(list, args);
-    };
     // TODO: clean this mess, maybe replace push with splice.
     proxy.splice = function(prop, start, end) {
       if (arguments.length < 2) return [];
@@ -90,6 +78,17 @@
         if (render.splice) render.splice(start, end, middle);
       });
       return res;
+    };
+    proxy.push = function(prop, item) {
+      var list = resolveProp(maps.orig, prop);
+      return proxy.splice(prop, list.length, 0, item);
+    };
+    proxy.unshift = function(prop, item) {
+      return proxy.splice(prop, 0, 0, item);
+    };
+    proxy.replace = function(prop, a, b) {
+      var list = resolveProp(maps.orig, prop);
+      return proxy.splice(prop, list.indexOf(a), 1, b || a);
     };
 
     Object.keys(maps.binds).forEach(function(prop) {
@@ -316,20 +315,6 @@
           })(orig);
           render.splice = function(start, end, middle) {
             splice(orig, undefined, start, end, middle);
-          };
-          // TODO: replace push with splice maybe
-          render.push = function() {
-            var list = resolveProp(orig, iter.prop),
-                each = iter.each && resolveProp(orig, iter.each),
-                lslen = list.length,
-                i, len, k, v;
-            for (i=0, len=arguments.length; i<len; i++) {
-              k = lslen + i;
-              v = arguments[i];
-              addkv(orig, k, v);
-              subproxies.push(insertNodes(orig,
-                each && each.bind(null, v, k)));
-            }
           };
           bucket(binds, iter.prop.split('.')[0], renderId);
           keys(qmatch).forEach(function(qp) {
