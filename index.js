@@ -249,7 +249,7 @@
 
       traverseElements(el, function(el_) {
         var i, iter, template, renderId, insertNodes, subproxies, addkv,
-            qmatch, qp, render;
+            qmatch, qp, splice, removeNodes;
 
         // Stop handling and recursion if subview.
         if (el_.getAttribute('vx-subview') !== null) return false;
@@ -265,12 +265,13 @@
           addkv = function(orig, k, v) {
             if (iter.key) orig[iter.key] = k;
             orig[iter.alias] = v;
+            return orig;
           };
 
           for (i=iter.nodes.length; i--;)
             iter.parent.removeChild(iter.nodes[i]);
 
-          insertNodes = function(orig, each, marker) {
+          insertNodes = function insertNodes(orig, each, marker) {
             var clone = template.cloneNode(true),
                 subproxy = createProxy(traverse(clone, orig)),
                 nodes = Array.prototype.slice.call(clone.childNodes);
@@ -280,48 +281,41 @@
             subproxy.__nodes = nodes;
             return subproxy;
           };
+          removeNodes = function removeNodes(sp) {
+            var nodes = sp.__nodes, i;
+            for (i=nodes.length; i--;) iter.parent.removeChild(nodes[i]);
+          };
 
-          function splice(orig, ext, start, end, middle) {
+          splice = function splice(orig, ext, start, end, middle) {
             var list = resolveProp(orig, iter.prop),
                 each = iter.each && resolveProp(orig, iter.each),
                 splen = subproxies.length,
-                ks, klen, i, i_, len, item, sp, spn, k;
+                ks, klen, i, i_, len, item, sp, spn, k, orig_;
             if (start == null) start = 0;
             if (end == null || isNaN(end)) end = splen;
-            if (list) {
-              ks=keys(list);
-              klen=ks.length;
-              if (middle == null) middle = klen-start;
-              // TODO: Set len to list.length and update index/key for all
-              // items after start. i >= splen && iter.key then addkv(orig, k), extend
-              len = iter.key ? klen : start + middle;
-              if (ext) orig = ext;
-              for (i=start; i<len; i++) {
+            if (list) klen = (ks=keys(list), ks.length);
+            if (middle == null || isNaN(middle)) middle = klen || 0;
+            if (klen) {
+              for (i=start; i<middle; i++) {
                 item = list[k=ks[i]];
                 if (i < splen && i < end) {
-                  var orig_ = {};
-                  if (i<start+middle) orig_[iter.alias] = item;
-                  if (iter.key) orig_[iter.key] = k;
-                  subproxies[i].extend(orig_);
+                  subproxies[i].extend(addkv(ext||{}, k, item));
                 } else {
-                  addkv(orig, k, item);
-                  subproxies.splice(i, 0, insertNodes(orig,
+                  subproxies.splice(i, 0, insertNodes(addkv(ext||orig, k, item),
                     each && each.bind(null, item, k),
                     subproxies[i] && subproxies[i].__nodes[0]));
                 }
               }
             }
-            sps = subproxies.splice(i, end-i);
-            for (i=0, len=sps.length; i<len; i++) {
-              sp = sps[i];
-              spn = sp.__nodes;
-              for (i_=spn.length; i_--;) iter.parent.removeChild(spn[i_]);
-            }
-          }
+            sps = subproxies.splice(middle, end-middle);
+            for (i=0, len=sps.length; i<len; i++) removeNodes(sps[i]);
+            if (ks && iter.key) for (i=middle, len=subproxies.length; i<len; i++)
+              subproxies[i].extend((orig_={}, orig_[iter.key]=ks[i], orig_));
+          };
 
           (renders[renderId] = splice)(orig);
           splice.splice = function(start, end, middle) {
-            splice(orig, undefined, start, end+start, middle);
+            splice(orig, undefined, start, end+start, middle+start);
           };
           bucket(binds, iter.prop.split('.')[0], renderId);
           keys(qmatch).forEach(function(qp) {
