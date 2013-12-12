@@ -23,7 +23,7 @@
     "browserify": "*"
   },
   "scripts": {
-    "install": "[ -d test/ ] && [ \"`which browserify`\" ] && browserify test/browser.js -md -o test/runner/script.js || exit 0",
+    "install": "browserify test/browser.js -md -o test/runner/script.js || exit 0",
     "test": "tap test/node.js"
   },
   "files": [
