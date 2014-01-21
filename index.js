@@ -211,8 +211,8 @@
             // Create rendering function for attribute.
             (renders[renderId=count++] = function(orig, clear) {
               var val = noTmpl ? resolve(orig, str) : strTmpl(str, orig);
-              !clear && name in owner ? owner[name] = val :
-                owner.setAttribute(name, val);
+              if (!clear && (name in owner)) owner[name] = val;
+              if (typeof val !== 'boolean') owner.setAttribute(name, val);
             })(orig, true);
             // Bi-directional coupling.
             if (noTmpl && chains[0].length === 1)
