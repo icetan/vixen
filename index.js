@@ -9,7 +9,7 @@
       forExpr = /^\s*(?:([^\s]+?)\s*:\s*)?([^\s]+?)\s+in\s+([^\s]+?)(?:\s+do\s+([^\s]+))?\s*$/,
       builtins = {
         '|': function(a, b) { return b(a); },
-        '+': function(a, b) { return a + b; },
+        '+': function(a, b) { return (a-0) + (b-0); },
         '-': function(a, b) { return a - b; },
         '*': function(a, b) { return a * b; },
         '/': function(a, b) { return a / b; },
