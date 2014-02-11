@@ -618,14 +618,16 @@ module.exports = function(test, jsdom) {
   });
 
   test('literal values with infix expressions', function(t) {
-    t.plan(1);
+    t.plan(2);
     jsdom.env(
-      '<html><body>{{4 + 3 + \'hello\'}}</body></html>', [],
+      '<html><body>{{4 + number}}</body></html>', [],
       function(err, window) {
         var body = getBody(window),
-            model = { '+': function(a, b) { return a + b; } },
+            model = { number:'3' },
             viewModel = vixen(body, model);
-        t.equal(body.textContent, '7hello');
+        t.equal(body.textContent, '7');
+        viewModel.number = 'hello';
+        t.equal(body.textContent, 'NaN');
       }
     );
   });
